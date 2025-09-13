@@ -1,0 +1,328 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../Models/UserModel.js';
+
+// Generate JWT token
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
+
+// Login with email and password
+export const Login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Check if user registered with OAuth
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is associated with Google sign-in. Please use Google to login.'
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Update last login
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    // Generate access token
+    const accessToken = generateToken(user._id);
+
+    // Return user data without password
+    const userResponse = {
+      id: user._id,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      phoneNumber: user.phoneNumber,
+      authProvider: user.authProvider,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      user: userResponse,
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Register with email and password
+export const Register = async (req, res) => {
+  try {
+    const { email, password, displayName } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      displayName: displayName || email.split('@')[0],
+      authProvider: 'email',
+      emailVerified: false,
+      createdAt: new Date(),
+      lastLoginAt: new Date()
+    });
+
+    await newUser.save();
+
+    // Generate access token
+    const accessToken = generateToken(newUser._id);
+
+    // Return user data without password
+    const userResponse = {
+      id: newUser._id,
+      email: newUser.email,
+      displayName: newUser.displayName,
+      photoURL: newUser.photoURL,
+      emailVerified: newUser.emailVerified,
+      phoneNumber: newUser.phoneNumber,
+      authProvider: newUser.authProvider,
+      createdAt: newUser.createdAt,
+      lastLoginAt: newUser.lastLoginAt
+    };
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      user: userResponse,
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// OAuth login (Google) - Save or update user
+export const OAuthLogin = async (req, res) => {
+  try {
+    const {
+      uid,
+      email,
+      displayName,
+      photoURL,
+      emailVerified,
+      phoneNumber,
+      authProvider = 'google',
+      providerData
+    } = req.body;
+
+    // Validate required fields
+    if (!uid || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and email are required'
+      });
+    }
+
+    // Check if user exists by email
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Update existing user with OAuth data
+      user.uid = uid;
+      user.displayName = displayName || user.displayName;
+      user.photoURL = photoURL || user.photoURL;
+      user.emailVerified = emailVerified;
+      user.phoneNumber = phoneNumber || user.phoneNumber;
+      user.authProvider = authProvider;
+      user.providerData = providerData;
+      user.lastLoginAt = new Date();
+      
+      await user.save();
+    } else {
+      // Create new user from OAuth data
+      user = new User({
+        uid,
+        email,
+        displayName: displayName || email.split('@')[0],
+        photoURL,
+        emailVerified,
+        phoneNumber,
+        authProvider,
+        providerData,
+        createdAt: new Date(),
+        lastLoginAt: new Date()
+      });
+
+      await user.save();
+    }
+
+    // Generate access token
+    const accessToken = generateToken(user._id);
+
+    // Return user data
+    const userResponse = {
+      id: user._id,
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      phoneNumber: user.phoneNumber,
+      authProvider: user.authProvider,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'OAuth login successful',
+      user: userResponse,
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('OAuth login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get user profile
+export const GetProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId; // From JWT middleware
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        phoneNumber: user.phoneNumber,
+        authProvider: user.authProvider,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Refresh token
+export const RefreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required'
+      });
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
+      });
+    }
+
+    // Generate new access token
+    const accessToken = generateToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      accessToken
+    });
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Invalid refresh token'
+    });
+  }
+};

@@ -1,9 +1,13 @@
+import React from 'react';
 import { useAuth } from '../Context/AuthContent';
+import { useTheme } from '../Context/ThemeContext';
 import { logOut } from '../Config/firebase';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon, LogOut, User, Settings, Bell, Home } from 'lucide-react';
 
 const Dashboard = () => {
   const { currentUser, userProfile } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -15,178 +19,210 @@ const Dashboard = () => {
     }
   };
 
-  const getSignInProvider = () => {
-    if (currentUser?.providerData) {
-      const provider = currentUser.providerData[0]?.providerId;
-      switch (provider) {
-        case 'google.com':
-          return 'Google';
-        case 'password':
-          return 'Email/Password';
-        default:
-          return 'Unknown';
-      }
-    }
-    return 'Unknown';
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-zinc-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <header className="bg-white dark:bg-zinc-800 shadow">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo/Title */}
             <div className="flex items-center">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <Home className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <h1 className="ml-2 text-xl font-semibold text-gray-900 dark:text-white">
                 Dashboard
               </h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Logout
-            </button>
+
+            {/* Right side controls */}
+            <div className="flex items-center space-x-4">
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? (
+                  <Sun className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-gray-700" />
+                )}
+              </button>
+
+              {/* Notifications */}
+              <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+
+              {/* Settings */}
+              <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <Settings className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+
+              {/* User Profile Dropdown */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  {userProfile?.photoURL ? (
+                    <img
+                      src={userProfile.photoURL}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full border-2 border-gray-300 dark:border-gray-600"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {userProfile?.displayName || userProfile?.email?.split('@')[0] || 'User'}
+                  </span>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-              User Profile Information
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Profile Picture and Basic Info */}
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  {userProfile?.photoURL ? (
-                    <img
-                      src={userProfile.photoURL}
-                      alt="Profile"
-                      className="w-16 h-16 rounded-full border-2 border-gray-300 dark:border-gray-600"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-gray-600 dark:text-gray-300">
-                        {userProfile?.displayName?.charAt(0) || userProfile?.email?.charAt(0) || '?'}
-                      </span>
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {userProfile?.displayName || 'No name provided'}
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      {userProfile?.email}
-                    </p>
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Welcome back, {userProfile?.displayName?.split(' ')[0] || userProfile?.email?.split('@')[0] || 'User'}!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Here's what's happening with your projects today.
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">P</span>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      First Name:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {userProfile?.givenName || 'Not provided'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Last Name:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {userProfile?.familyName || 'Not provided'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Sign-in Provider:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {getSignInProvider()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Account Details */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      User ID:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white font-mono">
-                      {userProfile?.uid}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Email Verified:
-                    </span>
-                    <span className={`text-sm font-medium ${
-                      userProfile?.emailVerified 
-                        ? 'text-green-600 dark:text-green-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {userProfile?.emailVerified ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Phone Number:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {userProfile?.phoneNumber || 'Not provided'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Account Created:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {userProfile?.creationTime ? 
-                        new Date(userProfile.creationTime).toLocaleDateString() : 
-                        'Unknown'
-                      }
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 w-32">
-                      Last Sign-in:
-                    </span>
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      {userProfile?.lastSignInTime ? 
-                        new Date(userProfile.lastSignInTime).toLocaleDateString() : 
-                        'Unknown'
-                      }
-                    </span>
-                  </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">12</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Raw Data (for development purposes) */}
-            <div className="mt-8">
-              <details className="bg-gray-50 dark:bg-zinc-700 rounded-lg p-4">
-                <summary className="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-300">
-                  View Raw Profile Data (Development)
-                </summary>
-                <pre className="mt-2 text-xs text-gray-800 dark:text-gray-200 overflow-auto">
-                  {JSON.stringify(userProfile, null, 2)}
-                </pre>
-              </details>
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">C</span>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">8</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">P</span>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">3</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">O</span>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">1</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* User Info Card */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Profile Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.email}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Display Name</label>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.displayName || 'Not set'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email Verified</label>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {userProfile?.emailVerified ? (
+                    <span className="text-green-600 dark:text-green-400">Verified</span>
+                  ) : (
+                    <span className="text-red-600 dark:text-red-400">Not verified</span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Last Sign In</label>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Project "Website Redesign" was updated</span>
+                <span className="text-xs text-gray-500 dark:text-gray-500">2 hours ago</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Task "Setup database" completed</span>
+                <span className="text-xs text-gray-500 dark:text-gray-500">4 hours ago</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">New team member added to "Mobile App"</span>
+                <span className="text-xs text-gray-500 dark:text-gray-500">1 day ago</span>
+              </div>
             </div>
           </div>
         </div>
