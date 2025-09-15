@@ -196,6 +196,16 @@ export const OAuthLogin = async (req, res) => {
       });
     }
 
+    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    if (!roleDoc) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Email not authorized for this portal.'
+      });
+    }
+    user.role = roleDoc.role;
+    await user.save();
+
     // Check if user exists by email
     let user = await User.findOne({ email });
 
@@ -205,6 +215,7 @@ export const OAuthLogin = async (req, res) => {
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
       user.emailVerified = emailVerified;
+      user.role = roleDoc.role;
       user.phoneNumber = phoneNumber || user.phoneNumber;
       user.authProvider = authProvider;
       user.providerData = providerData;
@@ -219,6 +230,7 @@ export const OAuthLogin = async (req, res) => {
         displayName: displayName || email.split('@')[0],
         photoURL,
         emailVerified,
+        role: roleDoc.role,
         phoneNumber,
         authProvider,
         providerData,
@@ -230,15 +242,7 @@ export const OAuthLogin = async (req, res) => {
     }
 
     // Fetch role from Role collection
-    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
-    if (!roleDoc) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Email not authorized for this portal.'
-      });
-    }
-    user.role = roleDoc.role;
-    await user.save();
+
 
     // Generate access token
     const accessToken = generateToken(user._id);
