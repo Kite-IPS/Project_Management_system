@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   uid: {
     type: String,
     sparse: true, // Allow null values, but ensure uniqueness when present
-    unique: true
+    unique: true,
   },
   email: {
     type: String,

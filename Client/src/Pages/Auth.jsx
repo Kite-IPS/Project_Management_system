@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { signInWithGoogle, signInWithEmail } from "../Config/firebase";
+import { signInWithGoogle } from "../Config/firebase";
 import { useAuth } from "../Context/AuthContent";
 import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -18,21 +16,6 @@ const Auth = () => {
       navigate('/dashboard'); // Redirect to your desired page
     }
   }, [currentUser, navigate]);
-  
-  const handleLoginWithEmail = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    
-    try {
-      await signInWithEmail(email, password);
-      // User will be redirected automatically via useEffect
-    } catch (error) {
-      setError(getErrorMessage(error.code));
-    } finally {
-      setLoading(false);
-    }
-  };
   
   const handleLoginWithGoogle = async () => {
     setLoading(true);
@@ -122,78 +105,6 @@ const Auth = () => {
                 </>
               )}
             </button>
-            
-            {/* Divider */}
-            <div className="flex items-center justify-center my-6">
-              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-              <span className="px-4 text-gray-500 dark:text-gray-400 text-sm">OR</span>
-              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-            </div>
-
-            <form onSubmit={handleLoginWithEmail}>
-              {/* Email Input */}
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="ex.john@gmail.com"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-black dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* Password Input */}
-              <div className="mb-6">
-                <label htmlFor="password" className="block text-sm font-medium mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="At least 6 characters"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800 text-black dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* Login Button */}
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 transition-colors duration-200 font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Login'
-                )}
-              </button>
-            </form>
-
-            {/* Additional Links */}
-            <div className="mt-6 text-center space-y-2">
-              <button 
-                type="button"
-                className="text-sm text-blue-500 hover:text-blue-600"
-                onClick={() => navigate('/forgot-password')}
-              >
-                Forgot password?
-              </button>
-            </div>
           </div>
         </div>
       </div>

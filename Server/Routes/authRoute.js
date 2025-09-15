@@ -41,7 +41,8 @@ const oauthValidation = [
     .withMessage('User ID is required'),
   body('email')
     .isEmail()
-    .normalizeEmail()
+    .trim()
+    .normalizeEmail({ gmail_remove_dots: false })  // Preserve dots in Gmail addresses
     .withMessage('Please provide a valid email'),
   body('authProvider')
     .optional()

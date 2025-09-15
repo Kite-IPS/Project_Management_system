@@ -6,7 +6,8 @@ const roleSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    set: (v) => v.toLowerCase().trim()  // Ensure consistent email format on save
   },
   role: {
     type: String,
@@ -22,6 +23,14 @@ const roleSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Pre-save middleware to ensure email is always normalized
+roleSchema.pre('save', function(next) {
+  if (this.email) {
+    this.email = this.email.toLowerCase().trim();
+  }
+  next();
 });
 
 const Role = mongoose.model('Role', roleSchema);

@@ -177,6 +177,8 @@ export const Register = async (req, res) => {
 // OAuth login (Google) - Save or update user
 export const OAuthLogin = async (req, res) => {
   try {
+    console.log('OAuth Login - Received request body:', JSON.stringify(req.body, null, 2));
+    
     const {
       uid,
       email,
@@ -190,24 +192,53 @@ export const OAuthLogin = async (req, res) => {
 
     // Validate required fields
     if (!uid || !email) {
+      console.log('OAuth Login - Missing required fields:', { uid, email });
       return res.status(400).json({
         success: false,
         message: 'User ID and email are required'
       });
     }
 
-    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    console.log('OAuth Login - Checking authorization for email:', email);
+    
+    // First, check if the email is authorized
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    console.log('OAuth Login - Email processing:', {
+      originalEmail: email,
+      normalizedEmail: normalizedEmail
+    });
+    
+    const roleDoc = await Role.findOne({ email: normalizedEmail });
+    console.log('OAuth Login - Role search result:', {
+      searchEmail: normalizedEmail,
+      roleFound: !!roleDoc,
+      roleDoc: roleDoc
+    });
+
+    // Log all roles for comparison
+    const allRoles = await Role.find({});
+    console.log('OAuth Login - All roles:', allRoles.map(r => ({
+      email: r.email,
+      role: r.role
+    })));
+
     if (!roleDoc) {
+      console.log('OAuth Login - Authorization failed:', {
+        searchedEmail: normalizedEmail,
+        allEmails: allRoles.map(r => r.email)
+      });
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Email not authorized for this portal.'
+        message: 'Access denied. Email not authorized for this portal.',
+        debug: {
+          searchedEmail: normalizedEmail,
+          availableEmails: allRoles.map(r => r.email)
+        }
       });
-    }
-    user.role = roleDoc.role;
-    await user.save();
-
-    // Check if user exists by email
+    }    console.log('OAuth Login - Role authorized, checking for existing user');
+    // Then, check if user exists by email
     let user = await User.findOne({ email });
+    console.log('OAuth Login - Existing user found:', user ? 'Yes' : 'No');
 
     if (user) {
       // Update existing user with OAuth data
@@ -215,7 +246,7 @@ export const OAuthLogin = async (req, res) => {
       user.displayName = displayName || user.displayName;
       user.photoURL = photoURL || user.photoURL;
       user.emailVerified = emailVerified;
-      user.role = roleDoc.role;
+      user.role = roleDoc.role; // Assign role from roleDoc
       user.phoneNumber = phoneNumber || user.phoneNumber;
       user.authProvider = authProvider;
       user.providerData = providerData;
@@ -230,7 +261,7 @@ export const OAuthLogin = async (req, res) => {
         displayName: displayName || email.split('@')[0],
         photoURL,
         emailVerified,
-        role: roleDoc.role,
+        role: roleDoc.role, // Assign role from roleDoc
         phoneNumber,
         authProvider,
         providerData,
@@ -368,7 +399,26 @@ export const CheckEmail = async (req, res) => {
   }
 
   try {
-    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('CheckEmail - Email processing:', {
+      originalEmail: email,
+      normalizedEmail: normalizedEmail
+    });
+
+    const roleDoc = await Role.findOne({ email: normalizedEmail });
+    console.log('CheckEmail - Role search result:', {
+      searchEmail: normalizedEmail,
+      roleFound: !!roleDoc,
+      roleDoc: roleDoc
+    });
+
+    // Log all roles for comparison
+    const allRoles = await Role.find({});
+    console.log('CheckEmail - All roles:', allRoles.map(r => ({
+      email: r.email,
+      role: r.role
+    })));
+
     if (roleDoc) {
       res.status(200).json({
         success: true,

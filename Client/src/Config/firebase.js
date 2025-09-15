@@ -1,6 +1,6 @@
 // firebase.js
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 // Your Firebase config object (replace with your actual config)
 const firebaseConfig = {
@@ -54,10 +54,38 @@ const apiCall = async (endpoint, options = {}) => {
 // Authentication functions
 export const signInWithGoogle = async () => {
   try {
+    console.log('Attempting Google sign-in with popup...');
+    
+    // Step 1: Firebase authentication
     const result = await signInWithPopup(auth, googleProvider);
+    console.log('Popup sign-in successful');
+    
     const user = result.user;
+    console.log('Google auth successful, checking email authorization');
 
-    // Send OAuth data to backend
+    // Step 2: Check if email is authorized BEFORE proceeding
+    let checkResponse;
+    try {
+      checkResponse = await apiCall('/auth/check-email', {
+        method: 'POST',
+        body: JSON.stringify({ email: user.email })
+      });
+
+      // If we get here, the email is authorized
+      console.log('Email authorized, proceeding with OAuth backend registration');
+    } catch (apiError) {
+      console.error('Error checking email authorization:', apiError);
+      // Sign out from Firebase if email check fails
+      await signOut(auth);
+      
+      // Re-throw the specific error message from the server
+      if (apiError.message) {
+        throw apiError;
+      }
+      throw new Error('Failed to verify email authorization. Please try again later.');
+    }
+
+    // Step 3: Email is authorized, proceed with backend registration
     const oauthData = {
       uid: user.uid,
       email: user.email,
@@ -69,6 +97,12 @@ export const signInWithGoogle = async () => {
       providerData: user.providerData
     };
 
+    console.log('Sending OAuth data to backend:', {
+      uid: oauthData.uid,
+      email: oauthData.email,
+      displayName: oauthData.displayName
+    });
+    
     // Save/update user in backend
     const backendResponse = await apiCall('/auth/oauth', {
       method: 'POST',
@@ -78,6 +112,12 @@ export const signInWithGoogle = async () => {
     // Store access token
     if (backendResponse.accessToken) {
       localStorage.setItem('accessToken', backendResponse.accessToken);
+      console.log('Authentication complete, token stored');
+    } else {
+      console.error('No access token received from backend');
+      await signOut(auth);
+      localStorage.removeItem('accessToken');
+      throw new Error('Authentication failed: No access token received');
     }
 
     return {
@@ -86,72 +126,11 @@ export const signInWithGoogle = async () => {
     };
   } catch (error) {
     console.error('Error signing in with Google:', error);
-    throw error;
-  }
-};
-
-export const signInWithEmail = async (email, password) => {
-  try {
-    // First try Firebase authentication
-    const firebaseResult = await signInWithEmailAndPassword(auth, email, password);
-    
-    // Then authenticate with backend
-    const backendResponse = await apiCall('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-
-    // Store access token
-    if (backendResponse.accessToken) {
-      localStorage.setItem('accessToken', backendResponse.accessToken);
+    // Ensure user is signed out and no token exists if any error occurs
+    if (error.message && error.message.includes('Access denied')) {
+      await signOut(auth);
+      localStorage.removeItem('accessToken');
     }
-
-    return {
-      firebaseResult,
-      backendData: backendResponse,
-      userProfile: {
-        uid: firebaseResult.user.uid,
-        email: firebaseResult.user.email,
-        displayName: firebaseResult.user.displayName,
-        photoURL: firebaseResult.user.photoURL,
-        emailVerified: firebaseResult.user.emailVerified,
-        phoneNumber: firebaseResult.user.phoneNumber,
-        creationTime: firebaseResult.user.metadata.creationTime,
-        lastSignInTime: firebaseResult.user.metadata.lastSignInTime
-      }
-    };
-  } catch (error) {
-    console.error('Error signing in with email:', error);
-    throw error;
-  }
-};
-
-export const signUpWithEmail = async (email, password, displayName = '') => {
-  try {
-    // First create user in Firebase
-    const firebaseResult = await createUserWithEmailAndPassword(auth, email, password);
-
-    // Then register with backend
-    const backendResponse = await apiCall('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        email, 
-        password,
-        displayName: displayName || email.split('@')[0]
-      })
-    });
-
-    // Store access token
-    if (backendResponse.accessToken) {
-      localStorage.setItem('accessToken', backendResponse.accessToken);
-    }
-
-    return {
-      firebaseResult,
-      backendData: backendResponse
-    };
-  } catch (error) {
-    console.error('Error creating user:', error);
     throw error;
   }
 };
