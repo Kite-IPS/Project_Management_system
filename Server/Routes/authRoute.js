@@ -1,10 +1,10 @@
 import express from 'express';
 import { 
   Login, 
-  Register, 
   OAuthLogin, 
   GetProfile, 
-  RefreshToken 
+  RefreshToken,
+  CheckEmail 
 } from '../Controllers/authController.js';
 import { authenticateToken } from '../Middleware/authMiddleware.js';
 import { body, validationResult } from 'express-validator';
@@ -35,22 +35,6 @@ const loginValidation = [
     .withMessage('Password must be at least 6 characters long')
 ];
 
-const registerValidation = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  body('displayName')
-    .optional()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Display name must be between 2 and 50 characters')
-];
-
 const oauthValidation = [
   body('uid')
     .notEmpty()
@@ -67,8 +51,8 @@ const oauthValidation = [
 
 // Auth routes
 authRouter.post('/login', loginValidation, handleValidationErrors, Login);
-authRouter.post('/register', registerValidation, handleValidationErrors, Register);
 authRouter.post('/oauth', oauthValidation, handleValidationErrors, OAuthLogin);
+authRouter.post('/check-email', CheckEmail);
 
 // Protected routes
 authRouter.get('/profile', authenticateToken, GetProfile);

@@ -186,16 +186,6 @@ const Auth = () => {
 
             {/* Additional Links */}
             <div className="mt-6 text-center space-y-2">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{" "}
-                <button 
-                  type="button"
-                  className="text-blue-500 hover:text-blue-600 font-medium"
-                  onClick={() => navigate('/signup')}
-                >
-                  Sign up
-                </button>
-              </p>
               <button 
                 type="button"
                 className="text-sm text-blue-500 hover:text-blue-600"

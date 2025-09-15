@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../Models/UserModel.js';
+import Role from '../Models/RoleModel.js';
 
 // Generate JWT token
 const generateToken = (userId) => {
@@ -46,6 +47,16 @@ export const Login = async (req, res) => {
       });
     }
 
+    // Check if user has authorized role
+    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    if (!roleDoc) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Email not authorized for this portal.'
+      });
+    }
+    user.role = roleDoc.role;
+
     // Update last login
     user.lastLoginAt = new Date();
     await user.save();
@@ -62,6 +73,7 @@ export const Login = async (req, res) => {
       emailVerified: user.emailVerified,
       phoneNumber: user.phoneNumber,
       authProvider: user.authProvider,
+      role: user.role,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt
     };
@@ -141,6 +153,7 @@ export const Register = async (req, res) => {
       emailVerified: newUser.emailVerified,
       phoneNumber: newUser.phoneNumber,
       authProvider: newUser.authProvider,
+      role: newUser.role,
       createdAt: newUser.createdAt,
       lastLoginAt: newUser.lastLoginAt
     };
@@ -216,6 +229,17 @@ export const OAuthLogin = async (req, res) => {
       await user.save();
     }
 
+    // Fetch role from Role collection
+    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    if (!roleDoc) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Email not authorized for this portal.'
+      });
+    }
+    user.role = roleDoc.role;
+    await user.save();
+
     // Generate access token
     const accessToken = generateToken(user._id);
 
@@ -229,6 +253,7 @@ export const OAuthLogin = async (req, res) => {
       emailVerified: user.emailVerified,
       phoneNumber: user.phoneNumber,
       authProvider: user.authProvider,
+      role: user.role,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt
     };
@@ -323,6 +348,40 @@ export const RefreshToken = async (req, res) => {
     res.status(401).json({
       success: false,
       message: 'Invalid refresh token'
+    });
+  }
+};
+
+// Check if email is authorized
+export const CheckEmail = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is required'
+    });
+  }
+
+  try {
+    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    if (roleDoc) {
+      res.status(200).json({
+        success: true,
+        authorized: true,
+        role: roleDoc.role
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        authorized: false
+      });
+    }
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 };
