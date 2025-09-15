@@ -64,9 +64,8 @@ export const signInWithGoogle = async () => {
     console.log('Google auth successful, checking email authorization');
 
     // Step 2: Check if email is authorized BEFORE proceeding
-    let checkResponse;
     try {
-      checkResponse = await apiCall('/auth/check-email', {
+      await apiCall('/auth/check-email', {
         method: 'POST',
         body: JSON.stringify({ email: user.email })
       });
@@ -153,7 +152,7 @@ export const logOut = async () => {
             Authorization: `Bearer ${token}`
           }
         });
-      } catch (error) {
+      } catch {
         console.log('Backend logout failed, but continuing with client logout');
       }
     }

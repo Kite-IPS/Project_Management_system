@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../Context/AuthContent';
 import { useTheme } from '../Context/ThemeContext';
 import { logOut } from '../Config/firebase';
 import { useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, User, Settings, Bell, Home } from 'lucide-react';
+import Sidebar from '../components/Sidebar.jsx';
 
 const Dashboard = () => {
-  const { currentUser, userProfile } = useAuth();
+  const { userProfile } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    // Show loading screen for 2 seconds when dashboard loads
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -19,10 +31,26 @@ const Dashboard = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            Welcome to Project Management System
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading your dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo/Title */}
@@ -91,137 +119,142 @@ const Dashboard = () => {
         </div>
       </header>
 
+      {/* Sidebar */}
+      <Sidebar onToggle={setSidebarCollapsed} />
+
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {userProfile?.displayName?.split(' ')[0] || userProfile?.email?.split('@')[0] || 'User'}!
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Here's what's happening with your projects today.
-          </p>
-        </div>
+      <main className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Welcome back, {userProfile?.displayName?.split(' ')[0] || userProfile?.email?.split('@')[0] || 'User'}!
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Here's what's happening with your projects today.
+            </p>
+          </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">P</span>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">P</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">12</p>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">12</p>
-                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">C</span>
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">C</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">8</p>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">8</p>
-                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">P</span>
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">P</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">3</p>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">3</p>
-                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">O</span>
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">O</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">1</p>
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">1</p>
+              </div>
+            </div>
+          </div>
+
+          {/* User Info Card */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Profile Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Display Name</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.displayName || 'Not set'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email Verified</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {userProfile?.emailVerified ? (
+                      <span className="text-green-600 dark:text-green-400">Verified</span>
+                    ) : (
+                      <span className="text-red-600 dark:text-red-400">Not verified</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Last Sign In</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleDateString() : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* User Info Card */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 mb-8">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Profile Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.email}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Display Name</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">{userProfile?.displayName || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Email Verified</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {userProfile?.emailVerified ? (
-                    <span className="text-green-600 dark:text-green-400">Verified</span>
-                  ) : (
-                    <span className="text-red-600 dark:text-red-400">Not verified</span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Last Sign In</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                  {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleDateString() : 'N/A'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Project "Website Redesign" was updated</span>
-                <span className="text-xs text-gray-500 dark:text-gray-500">2 hours ago</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Task "Setup database" completed</span>
-                <span className="text-xs text-gray-500 dark:text-gray-500">4 hours ago</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">New team member added to "Mobile App"</span>
-                <span className="text-xs text-gray-500 dark:text-gray-500">1 day ago</span>
+          {/* Recent Activity */}
+          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Project "Website Redesign" was updated</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-500">2 hours ago</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Task "Setup database" completed</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-500">4 hours ago</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">New team member added to "Mobile App"</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-500">1 day ago</span>
+                </div>
               </div>
             </div>
           </div>
