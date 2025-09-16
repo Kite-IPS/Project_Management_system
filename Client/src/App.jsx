@@ -9,6 +9,7 @@ import {
 import ProtectedRoute from "./routes/ProtectRoute";
 import Auth from "./Pages/Auth";
 import Dashboard from "./Pages/Dashboard"; // Your dashboard component
+import Attendance from "./Pages/Attendance"; // Attendance component
 import { AuthProvider } from "./Context/AuthContent";
 import { ThemeProvider } from "./Context/ThemeContext";
 
@@ -25,6 +26,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/attendance"
+                element={
+                  <ProtectedRoute>
+                    <Attendance />
                   </ProtectedRoute>
                 }
               />

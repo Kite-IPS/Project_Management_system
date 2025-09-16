@@ -4,7 +4,8 @@ import {
   OAuthLogin, 
   GetProfile, 
   RefreshToken,
-  CheckEmail 
+  CheckEmail,
+  GetUsers 
 } from '../Controllers/authController.js';
 import { authenticateToken } from '../Middleware/authMiddleware.js';
 import { body, validationResult } from 'express-validator';
@@ -58,6 +59,7 @@ authRouter.post('/check-email', CheckEmail);
 // Protected routes
 authRouter.get('/profile', authenticateToken, GetProfile);
 authRouter.post('/refresh-token', RefreshToken);
+authRouter.get('/users', authenticateToken, GetUsers);
 
 // Logout route (optional - mainly for clearing server-side sessions if you implement them)
 authRouter.post('/logout', authenticateToken, (req, res) => {

@@ -48,14 +48,19 @@ export const Login = async (req, res) => {
     }
 
     // Check if user has authorized role
-    const roleDoc = await Role.findOne({ email: email.toLowerCase() });
+    let roleDoc = await Role.findOne({ email: email.toLowerCase() });
     if (!roleDoc) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Email not authorized for this portal.'
-      });
+      // Create default role for new users
+      // roleDoc = new Role({
+      //   email: email.toLowerCase(),
+      //   role: 'Member',
+      //   assignedBy: 'system'
+      // });
+      // await roleDoc.save();
+      user.role = 'Member'; // Default role
+    } else {
+      user.role = roleDoc.role;
     }
-    user.role = roleDoc.role;
 
     // Update last login
     user.lastLoginAt = new Date();
@@ -87,86 +92,6 @@ export const Login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-};
-
-// Register with email and password
-export const Register = async (req, res) => {
-  try {
-    const { email, password, displayName } = req.body;
-
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters long'
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
-
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      displayName: displayName || email.split('@')[0],
-      authProvider: 'email',
-      emailVerified: false,
-      createdAt: new Date(),
-      lastLoginAt: new Date()
-    });
-
-    await newUser.save();
-
-    // Generate access token
-    const accessToken = generateToken(newUser._id);
-
-    // Return user data without password
-    const userResponse = {
-      id: newUser._id,
-      email: newUser.email,
-      displayName: newUser.displayName,
-      photoURL: newUser.photoURL,
-      emailVerified: newUser.emailVerified,
-      phoneNumber: newUser.phoneNumber,
-      authProvider: newUser.authProvider,
-      role: newUser.role,
-      createdAt: newUser.createdAt,
-      lastLoginAt: newUser.lastLoginAt
-    };
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      user: userResponse,
-      accessToken
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -433,6 +358,34 @@ export const CheckEmail = async (req, res) => {
     }
   } catch (error) {
     console.error('Error checking email:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get all users for attendance management
+export const GetUsers = async (req, res) => {
+  try {
+    // Get all users with basic information needed for attendance
+    const users = await User.find({}, {
+      _id: 1,
+      email: 1,
+      displayName: 1,
+      photoURL: 1,
+      role: 1,
+      createdAt: 1
+    }).sort({ displayName: 1 });
+
+    res.status(200).json({
+      success: true,
+      message: 'Users retrieved successfully',
+      users: users
+    });
+
+  } catch (error) {
+    console.error('Error retrieving users:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

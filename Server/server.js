@@ -8,6 +8,7 @@ import morgan from 'morgan';
 
 // Import routes
 import authRouter from './Routes/authRoute.js';
+import attendanceRouter from './Routes/attendanceRoute.js';
 
 // Load environment variables
 dotenv.config();
@@ -101,6 +102,7 @@ connectDB();
 
 // --- Routes ---
 app.use('/api/auth', authRouter);
+app.use('/api/attendance', attendanceRouter);
 
 // Health check route
 app.get('/api/health', (req, res) => {
