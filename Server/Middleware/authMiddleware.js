@@ -1,7 +1,17 @@
 import jwt from 'jsonwebtoken';
 import User from '../Models/UserModel.js';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-// Middleware to verify JWT token
+// Initialize Firebase Admin (you may need to configure this)
+let admin;
+try {
+  admin = getAuth();
+} catch (error) {
+  console.log('Firebase Admin not initialized, falling back to JWT verification');
+}
+
+// Middleware to verify JWT token or Firebase token
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -14,11 +24,37 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    let user;
+
+    // First try Firebase token verification
+    if (admin) {
+      try {
+        const decodedToken = await admin.verifyIdToken(token);
+        user = await User.findOne({ email: decodedToken.email });
+        
+        if (!user) {
+          // Create user if doesn't exist (for Firebase users)
+          user = await User.create({
+            uid: decodedToken.uid,
+            email: decodedToken.email,
+            displayName: decodedToken.name,
+            emailVerified: decodedToken.email_verified,
+            authProvider: 'google'
+          });
+        }
+        
+        req.user = user;
+        return next();
+      } catch (firebaseError) {
+        console.log('Firebase token verification failed, trying JWT');
+      }
+    }
+
+    // Fallback to JWT verification
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Find user
-    const user = await User.findById(decoded.userId).select('-password');
+    user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(401).json({
         success: false,
