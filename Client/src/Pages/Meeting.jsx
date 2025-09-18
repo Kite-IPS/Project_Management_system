@@ -297,6 +297,45 @@ const Meeting = () => {
       {/* Main Content */}
       <main className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          {/* Summary Stats */}
+          {!loading && filteredMeetings.length > 0 && (
+            <div className="py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <FileText className="h-8 w-8 text-blue-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Notes</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{filteredMeetings.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <BookOpen className="h-8 w-8 text-green-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
+                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
+                      {filteredMeetings.filter(m => new Date(m.datePublished).getMonth() === new Date().getMonth()).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <User className="h-8 w-8 text-purple-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Authors</p>
+                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                      {new Set(filteredMeetings.map(m => m.author)).size}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Controls Section */}
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -680,45 +719,6 @@ const Meeting = () => {
               </div>
             )}
           </div>
-
-          {/* Summary Stats */}
-          {!loading && filteredMeetings.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-blue-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Notes</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{filteredMeetings.length}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <BookOpen className="h-8 w-8 text-green-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
-                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
-                      {filteredMeetings.filter(m => new Date(m.datePublished).getMonth() === new Date().getMonth()).length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <User className="h-8 w-8 text-purple-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Authors</p>
-                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
-                      {new Set(filteredMeetings.map(m => m.author)).size}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>

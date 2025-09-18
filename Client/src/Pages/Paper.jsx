@@ -242,6 +242,41 @@ const Paper = () => {
       {/* Main Content */}
       <main className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          {/* Summary Stats */}
+          {!loading && filteredPapers.length > 0 && (
+            <div className="py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <FileText className="h-8 w-8 text-blue-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Papers</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalPapers}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <User className="h-8 w-8 text-green-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unique Assignees</p>
+                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{uniqueAssignees}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 text-purple-500" />
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</p>
+                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                      {lastUpdated || '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Controls Section */}
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -509,41 +544,6 @@ const Paper = () => {
               </div>
             )}
           </div>
-
-          {/* Summary Stats */}
-          {!loading && filteredPapers.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-blue-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Papers</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalPapers}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <User className="h-8 w-8 text-green-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unique Assignees</p>
-                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{uniqueAssignees}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <Calendar className="h-8 w-8 text-purple-500" />
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</p>
-                    <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
-                      {lastUpdated || '-'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>
