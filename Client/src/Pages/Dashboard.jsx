@@ -3,8 +3,9 @@ import { useAuth } from '../Context/AuthContent';
 import { useTheme } from '../Context/ThemeContext';
 import { logOut } from '../Config/firebase';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, User, Settings, Bell, Home } from 'lucide-react';
+import { Sun, Moon, LogOut, User, Settings, Bell, Home, Clock, CheckCircle, AlertTriangle, Target, TrendingUp, Activity } from 'lucide-react';
 import Sidebar from '../components/Sidebar.jsx';
+
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
@@ -24,6 +25,74 @@ const Dashboard = () => {
       console.error('Error logging out:', error);
     }
   };
+
+    // Mock data for projects
+    const [projects, setProjects] = useState([
+      {
+        id: 1,
+        title: 'Website Redesign',
+        description: 'Complete overhaul of the company website with modern UI/UX design',
+        status: 'In Progress',
+        assignees: ['John Doe', 'Jane Smith'],
+        dueDate: '2025-10-15',
+        createdDate: '2025-09-01'
+      },
+      {
+        id: 2,
+        title: 'Mobile App Development',
+        description: 'Develop iOS and Android mobile application',
+        status: 'To Do',
+        assignees: ['Jane Smith', 'Mike Wilson', 'Alex Rodriguez'],
+        dueDate: '2025-12-01',
+        createdDate: '2025-09-10'
+      },
+      {
+        id: 3,
+        title: 'Database Optimization',
+        description: 'Improve database performance and implement caching',
+        status: 'Done',
+        assignees: ['Mike Wilson'],
+        dueDate: '2025-09-30',
+        createdDate: '2025-08-15'
+      },
+      {
+        id: 4,
+        title: 'API Documentation',
+        description: 'Create comprehensive API documentation for developers',
+        status: 'In Progress',
+        assignees: ['Sarah Johnson', 'David Brown'],
+        dueDate: '2025-10-20',
+        createdDate: '2025-09-05'
+      },
+      {
+        id: 5,
+        title: 'Security Audit',
+        description: 'Conduct comprehensive security audit of all systems',
+        status: 'To Do',
+        assignees: ['David Brown', 'Chris Taylor'],
+        dueDate: '2025-11-15',
+        createdDate: '2025-09-12'
+      },
+      {
+        id: 6,
+        title: 'User Training Materials',
+        description: 'Develop training materials and user guides',
+        status: 'Review',
+        assignees: ['Lisa Anderson', 'Emma Thompson', 'Maya Patel'],
+        dueDate: '2025-10-25',
+        createdDate: '2025-08-20'
+      }
+    ]);
+  
+    // Calculate project statistics
+    const projectStats = {
+      total: projects.length,
+      ongoing: projects.filter(p => p.status === 'In Progress').length,
+      pending: projects.filter(p => p.status === 'To Do').length,
+      completed: projects.filter(p => p.status === 'Done').length,
+      review: projects.filter(p => p.status === 'Review').length,
+      overdue: projects.filter(p => new Date(p.dueDate) < new Date() && p.status !== 'Done').length
+    };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -113,68 +182,64 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">P</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">12</p>
-                  </div>
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <Target className="h-8 w-8 text-blue-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{projectStats.total}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 bg-green-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">C</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">8</p>
-                  </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <Activity className="h-8 w-8 text-blue-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ongoing</p>
+                  <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{projectStats.ongoing}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">P</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">3</p>
-                  </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-gray-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
+                  <p className="text-2xl font-semibold text-gray-600 dark:text-gray-400">{projectStats.pending}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">O</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">1</p>
-                  </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
+                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{projectStats.completed}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-yellow-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Review</p>
+                  <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">{projectStats.review}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
+                  <p className="text-2xl font-semibold text-red-600 dark:text-red-400">{projectStats.overdue}</p>
                 </div>
               </div>
             </div>

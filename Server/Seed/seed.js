@@ -2,15 +2,15 @@ import mongoose from 'mongoose';
 import Role from '../Models/RoleModel.js';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: './.env' });
 
 const seedRoles = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     
     const roles = [
-      { email: 'yogeshvenugopal875@gmail.com', role: 'Admin', batch: '2023' },
-      { email: 'mitun.7557@gmail.com', role: 'Admin', batch: '2023' }
+      { name: 'Yogesh Venugopal', email: 'yogeshvenugopal875@gmail.com', role: 'Admin', batch: 2023 },
+      { name: 'Mitun Kumar', email: 'mitun.7557@gmail.com', role: 'Admin', batch: 2023 }
     ];
     
     await Role.insertMany(roles);
