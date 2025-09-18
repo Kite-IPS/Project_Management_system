@@ -15,6 +15,10 @@ const roleSchema = new mongoose.Schema({
     default: 'Member',
     required: true
   },
+  batch:{
+    type: Number,
+    required: true,
+  },
   assignedBy: {
     type: String,
     default: 'system'

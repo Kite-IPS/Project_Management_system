@@ -40,6 +40,12 @@ const Attendance = () => {
   // API base URL
   const API_BASE_URL = 'http://localhost:5000/api';
 
+  // Check if selected date is today
+  const isToday = useCallback(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return selectedDate === today;
+  }, [selectedDate]);
+
   // Configure axios with auth token
   const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -134,6 +140,12 @@ const Attendance = () => {
   // Handle form submission for adding/editing attendance
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if attendance is being marked for today
+    if (!isToday()) {
+      alert('Attendance can only be marked for the current date.');
+      return;
+    }
     
     // Validate required fields
     if (!formData.userId) {
@@ -357,20 +369,34 @@ const Attendance = () => {
 
               <div className="flex items-center gap-4">
                 {/* Date Picker */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  {!isToday() && (
+                    <p className="text-amber-500 text-sm mt-1 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      Attendance can only be marked for today
+                    </p>
+                  )}
                 </div>
 
                 {/* Add Attendance Button */}
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                  disabled={!isToday()}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
+                    isToday()
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-gray-300 cursor-not-allowed text-gray-500'
+                  }`}
+                  title={isToday() ? 'Add Attendance' : 'Attendance can only be marked for today'}
                 >
                   <Plus className="h-4 w-4" />
                   Mark Attendance

@@ -9,8 +9,8 @@ const seedRoles = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     
     const roles = [
-      { email: 'yogeshvenugopal875@gmail.com', role: 'Admin' },
-      { email: 'mitun.7557@gmail.com', role: 'Admin' }
+      { email: 'yogeshvenugopal875@gmail.com', role: 'Admin', batch: '2023' },
+      { email: 'mitun.7557@gmail.com', role: 'Admin', batch: '2023' }
     ];
     
     await Role.insertMany(roles);

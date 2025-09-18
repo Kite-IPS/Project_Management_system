@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  BarChart3
+  BarChart3,
+  UserSearch,
 } from 'lucide-react';
 
 export default function Sidebar({ onToggle }) {
@@ -37,6 +38,12 @@ export default function Sidebar({ onToggle }) {
       path: '/attendance',
       icon: Users,
       description: 'Track attendance'
+    },
+    {
+      name: 'Studentlist',
+      path: '/students',
+      icon: UserSearch,
+      description: 'Student details of IPS'
     },
     {
       name: 'Projects',

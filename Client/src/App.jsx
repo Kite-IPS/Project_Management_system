@@ -8,10 +8,12 @@ import {
 } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectRoute";
 import Auth from "./Pages/Auth";
-import Dashboard from "./Pages/Dashboard"; // Your dashboard component
-import Attendance from "./Pages/Attendance"; // Attendance component
+import Dashboard from "./Pages/Dashboard"; 
+import Attendance from "./Pages/Attendance"; 
 import { AuthProvider } from "./Context/AuthContent";
 import { ThemeProvider } from "./Context/ThemeContext";
+import Project from "./Pages/Project"; 
+import Students from "./Pages/Students";
 
 function App() {
   return (
@@ -34,6 +36,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Attendance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects"
+                element={
+                  <ProtectedRoute>
+                    <Project />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path='/students'
+                element={
+                  <ProtectedRoute>
+                    <Students />
                   </ProtectedRoute>
                 }
               />
