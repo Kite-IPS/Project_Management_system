@@ -14,6 +14,10 @@ import { AuthProvider } from "./Context/AuthContent";
 import { ThemeProvider } from "./Context/ThemeContext";
 import Project from "./Pages/Project"; 
 import Students from "./Pages/Students";
+import EventReport from "./Pages/EventReport";
+import Meeting from "./Pages/Meeting";
+import Blog from "./Pages/Blog";
+import Paper from "./Pages/Paper";
 
 function App() {
   return (
@@ -52,6 +56,38 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Students />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path='/event-reports'
+                element={
+                  <ProtectedRoute>
+                    <EventReport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path='/papers'
+                element={
+                  <ProtectedRoute>
+                    <Paper />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path='/meeting-notes'
+                element={
+                  <ProtectedRoute>
+                    <Meeting />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path='/blogs'
+                element={
+                  <ProtectedRoute>
+                    <Blog />
                   </ProtectedRoute>
                 }
               />
