@@ -94,7 +94,7 @@ export default function Sidebar({ onToggle }) {
         )}
         <button
           onClick={handleToggle}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700
                      text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
                      transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -120,7 +120,7 @@ export default function Sidebar({ onToggle }) {
                 <Link
                   to={item.path}
                   className={`
-                    group flex items-center px-3 py-2.5 rounded-lg transition-all duration-200
+                    group flex items-center px-3 py-2.5 transition-all duration-200
                     ${isActive
                       ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-r-2 border-blue-500'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
