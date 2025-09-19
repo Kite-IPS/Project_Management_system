@@ -4,7 +4,8 @@ import { useTheme } from '../Context/ThemeContext';
 import { logOut } from '../Config/firebase';
 import { useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, User, Settings, Bell, Home, Clock, CheckCircle, AlertTriangle, Target, TrendingUp, Activity } from 'lucide-react';
-import Sidebar from '../components/Sidebar.jsx';
+import Sidebar from '../Components/Sidebar.jsx';
+import axios from 'axios';
 
 
 const Dashboard = () => {
@@ -12,9 +13,11 @@ const Dashboard = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
 
   useEffect(() => {
-    // No loading screen needed
+    fetchActivities();
   }, []);
 
   const handleLogout = async () => {
@@ -23,6 +26,42 @@ const Dashboard = () => {
       navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
+    }
+  };
+
+  // Fetch recent activities
+  const fetchActivities = async () => {
+    try {
+      setLoadingActivities(true);
+      const response = await axios.get('http://localhost:5000/api/activities/recent?limit=5');
+      if (response.data.success) {
+        setActivities(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      // Fallback to mock data if API fails
+      setActivities([
+        {
+          id: 1,
+          description: 'Project "Website Redesign" was updated',
+          timeAgo: '2 hours ago',
+          type: 'update'
+        },
+        {
+          id: 2,
+          description: 'Task "Setup database" completed',
+          timeAgo: '4 hours ago',
+          type: 'complete'
+        },
+        {
+          id: 3,
+          description: 'New team member added to "Mobile App"',
+          timeAgo: '1 day ago',
+          type: 'add'
+        }
+      ]);
+    } finally {
+      setLoadingActivities(false);
     }
   };
 
@@ -282,23 +321,42 @@ const Dashboard = () => {
           <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Project "Website Redesign" was updated</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-500">2 hours ago</span>
+              {loadingActivities ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center space-x-3 animate-pulse">
+                      <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
+                      <div className="h-4 bg-gray-300 rounded flex-1"></div>
+                      <div className="h-3 w-16 bg-gray-300 rounded"></div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Task "Setup database" completed</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-500">4 hours ago</span>
+              ) : activities.length > 0 ? (
+                <div className="space-y-4">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="flex items-center space-x-3">
+                      <div className={`h-2 w-2 rounded-full ${
+                        activity.action === 'created' ? 'bg-green-500' :
+                        activity.action === 'updated' ? 'bg-blue-500' :
+                        activity.action === 'deleted' ? 'bg-red-500' :
+                        activity.action === 'completed' ? 'bg-green-500' :
+                        'bg-yellow-500'
+                      }`}></div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {activity.description}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-500">
+                        {activity.timeAgo}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">New team member added to "Mobile App"</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-500">1 day ago</span>
+              ) : (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No recent activities</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

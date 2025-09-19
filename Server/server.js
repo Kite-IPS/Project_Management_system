@@ -12,6 +12,7 @@ import attendanceRouter from './Routes/attendanceRoute.js';
 import studentListRouter from './Routes/studentListRoute.js';
 import blogRouter from './Routes/blogRoute.js';
 import meetingRouter from './Routes/meetingRoute.js';
+import activityRouter from './Routes/activityRoute.js';
 
 // Load environment variables
 dotenv.config();
@@ -112,6 +113,7 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/students', studentListRouter);
 app.use('/api/blogs', blogRouter);
 app.use('/api/meetings', meetingRouter);
+app.use('/api/activities', activityRouter);
 
 // Health check route
 app.get('/api/health', (req, res) => {

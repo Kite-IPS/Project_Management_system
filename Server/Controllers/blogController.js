@@ -1,5 +1,6 @@
 import Blog from '../Models/BlogModel.js';
 import Role from '../Models/RoleModel.js';
+import { createActivity } from './activityController.js';
 
 // Get all blogs with pagination and filtering
 const getAllBlogs = async (req, res) => {
@@ -152,6 +153,16 @@ const createBlog = async (req, res) => {
     });
 
     const savedBlog = await newBlog.save();
+
+    // Log activity
+    await createActivity(
+      author,
+      'created',
+      'blog',
+      savedBlog._id,
+      title.trim(),
+      `Created blog post: "${title.trim()}"`
+    );
 
     res.status(201).json({
       success: true,

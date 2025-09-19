@@ -1,5 +1,6 @@
 import Meeting from '../Models/MeetingModel.js';
 import Role from '../Models/RoleModel.js';
+import { createActivity } from './activityController.js';
 
 // Get all meetings with pagination and filtering
 const getAllMeetings = async (req, res) => {
@@ -188,6 +189,16 @@ const createMeeting = async (req, res) => {
 
     const savedMeeting = await newMeeting.save();
 
+    // Log activity
+    await createActivity(
+      author,
+      'created',
+      'meeting',
+      savedMeeting._id,
+      title.trim(),
+      `Created meeting notes: "${title.trim()}"`
+    );
+
     res.status(201).json({
       success: true,
       message: 'Meeting created successfully',
@@ -306,6 +317,17 @@ const updateMeeting = async (req, res) => {
       }
     );
 
+    // Log activity
+    const userId = req.user ? req.user._id : updatedMeeting.author; // Use authenticated user or meeting author
+    await createActivity(
+      userId,
+      'updated',
+      'meeting',
+      id,
+      updatedMeeting.title,
+      `Updated meeting notes: "${updatedMeeting.title}"`
+    );
+
     res.status(200).json({
       success: true,
       message: 'Meeting updated successfully',
@@ -344,6 +366,17 @@ const deleteMeeting = async (req, res) => {
         message: 'Meeting not found'
       });
     }
+
+    // Log activity before deletion
+    const userId = req.user ? req.user._id : deletedMeeting.author; // Use authenticated user or meeting author
+    await createActivity(
+      userId,
+      'deleted',
+      'meeting',
+      id,
+      deletedMeeting.title,
+      `Deleted meeting notes: "${deletedMeeting.title}"`
+    );
 
     res.status(200).json({
       success: true,

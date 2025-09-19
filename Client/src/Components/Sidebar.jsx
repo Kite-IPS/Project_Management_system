@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import ips from '../../src/assets/ips_white.webp';
 import {
   FolderOpen,
   Users,
@@ -152,11 +153,19 @@ export default function Sidebar({ onToggle }) {
 
       {/* Footer */}
       {!isCollapsed && (
+        <>
         <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
             Project Management System
           </div>
         </div>
+        <div>
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Developed by IPS Tech</p>
+            <img src="/src/assets/ips_white.webp" className="h-8 mx-auto mt-2" />
+          </div>
+        </div>
+        </>
       )}
     </aside>
   );
