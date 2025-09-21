@@ -24,6 +24,9 @@ const Paper = () => {
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPaper, setEditingPaper] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Form state for adding/editing papers
   const [formData, setFormData] = useState({
@@ -33,81 +36,75 @@ const Paper = () => {
     paperWork: null
   });
 
-  // Mock team members for assignee dropdown
-  const teamMembers = [
-    { id: 1, name: 'John Doe', email: 'john@company.com', avatar: 'JD', color: 'bg-blue-500' },
-    { id: 2, name: 'Jane Smith', email: 'jane@company.com', avatar: 'JS', color: 'bg-green-500' },
-    { id: 3, name: 'Mike Wilson', email: 'mike@company.com', avatar: 'MW', color: 'bg-purple-500' },
-    { id: 4, name: 'Sarah Johnson', email: 'sarah@company.com', avatar: 'SJ', color: 'bg-pink-500' },
-    { id: 5, name: 'David Brown', email: 'david@company.com', avatar: 'DB', color: 'bg-indigo-500' },
-    { id: 6, name: 'Lisa Anderson', email: 'lisa@company.com', avatar: 'LA', color: 'bg-yellow-500' },
-    { id: 7, name: 'Alex Rodriguez', email: 'alex@company.com', avatar: 'AR', color: 'bg-red-500' }
-  ];
+  // API Base URL
+  const API_BASE_URL = 'http://localhost:5000/api';
 
-  // Mock data for papers
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setPapers([
-        {
-          id: 1,
-          name: 'Research Paper - AI Implementation',
-          dateUpdate: '2025-09-16',
-          assignee: 'John Doe',
-          paperWork: { name: 'ai_implementation_research.pdf', size: '3.2 MB' },
-          createdDate: '2025-09-01'
-        },
-        {
-          id: 2,
-          name: 'Technical Documentation - Database Design',
-          dateUpdate: '2025-09-14',
-          assignee: 'Jane Smith',
-          paperWork: { name: 'database_design_doc.docx', size: '2.1 MB' },
-          createdDate: '2025-09-02'
-        },
-        {
-          id: 3,
-          name: 'Project Proposal - Mobile Application',
-          dateUpdate: '2025-09-12',
-          assignee: 'Mike Wilson',
-          paperWork: { name: 'mobile_app_proposal.pdf', size: '1.8 MB' },
-          createdDate: '2025-08-25'
-        },
-        {
-          id: 4,
-          name: 'Analysis Report - Market Research',
-          dateUpdate: '2025-09-15',
-          assignee: 'Sarah Johnson',
-          paperWork: { name: 'market_research_analysis.xlsx', size: '4.5 MB' },
-          createdDate: '2025-09-05'
-        },
-        {
-          id: 5,
-          name: 'White Paper - Security Best Practices',
-          dateUpdate: '2025-09-13',
-          assignee: 'David Brown',
-          paperWork: { name: 'security_whitepaper.pdf', size: '2.7 MB' },
-          createdDate: '2025-08-30'
-        },
-        {
-          id: 6,
-          name: 'Case Study - User Experience Design',
-          dateUpdate: '2025-09-10',
-          assignee: 'Lisa Anderson',
-          paperWork: { name: 'ux_case_study.pdf', size: '2.9 MB' },
-          createdDate: '2025-08-28'
-        },
-        {
-          id: 7,
-          name: 'Presentation - Project Kickoff',
-          dateUpdate: '2025-09-11',
-          assignee: 'Alex Rodriguez',
-          paperWork: { name: 'kickoff_presentation.pptx', size: '5.1 MB' },
-          createdDate: '2025-09-03'
+  // Fetch users from existing auth API
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      ]);
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the data to match the expected format with avatar colors
+        const transformedUsers = data.users.map((user, index) => {
+          const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-red-500'];
+          const displayName = user.displayName || user.email.split('@')[0];
+          return {
+            _id: user._id || user.id,
+            name: displayName,
+            email: user.email,
+            avatar: displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
+            color: colors[index % colors.length]
+          };
+        });
+        setTeamMembers(transformedUsers);
+      } else {
+        console.error('Failed to fetch users:', data.message);
+        setTeamMembers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setTeamMembers([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Fetch papers from API
+  const fetchPapers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/papers`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setPapers(data.data);
+      } else {
+        console.error('Failed to fetch papers:', data.message);
+        alert('Failed to fetch papers');
+      }
+    } catch (error) {
+      console.error('Error fetching papers:', error);
+      alert('Error fetching papers');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
+  };
+
+  // Load papers and users on component mount
+  useEffect(() => {
+    fetchPapers();
+    fetchUsers();
   }, []);
 
   // Filtered papers
@@ -115,52 +112,63 @@ const Paper = () => {
     const matchesSearch =
       paper.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       paper.assignee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (paper.paperWork?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (paper.paperWork?.originalName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAssignee =
       filterAssignee === 'all' || paper.assignee === filterAssignee;
     return matchesSearch && matchesAssignee;
   });
 
   // Handle add/edit form submit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.assignee || !formData.paperWork) {
-      alert('Please fill all required fields.');
+    
+    if (!formData.name.trim() || !formData.assignee) {
+      alert('Please fill in all required fields.');
       return;
     }
-    if (editingPaper) {
-      setPapers(papers.map(p =>
-        p.id === editingPaper.id
-          ? {
-              ...p,
-              name: formData.name,
-              dateUpdate: formData.dateUpdate,
-              assignee: formData.assignee,
-              paperWork: formData.paperWork
-            }
-          : p
-      ));
-    } else {
-      setPapers([
-        ...papers,
-        {
-          id: papers.length + 1,
-          name: formData.name,
-          dateUpdate: formData.dateUpdate,
-          assignee: formData.assignee,
-          paperWork: formData.paperWork,
-          createdDate: new Date().toISOString().split('T')[0]
-        }
-      ]);
+
+    setSubmitting(true);
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('dateUpdate', formData.dateUpdate);
+      formDataToSend.append('assignee', formData.assignee);
+      
+      if (formData.paperWork && formData.paperWork instanceof File) {
+        formDataToSend.append('paperWork', formData.paperWork);
+      }
+
+      let response;
+      if (editingPaper) {
+        // Update existing paper
+        response = await fetch(`${API_BASE_URL}/papers/${editingPaper._id}`, {
+          method: 'PUT',
+          body: formDataToSend
+        });
+      } else {
+        // Create new paper
+        response = await fetch(`${API_BASE_URL}/papers`, {
+          method: 'POST',
+          body: formDataToSend
+        });
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(editingPaper ? 'Paper updated successfully!' : 'Paper created successfully!');
+        handleCancel();
+        fetchPapers(); // Refresh the list
+      } else {
+        alert(data.message || 'Failed to save paper');
+      }
+    } catch (error) {
+      console.error('Error saving paper:', error);
+      alert('Error saving paper');
+    } finally {
+      setSubmitting(false);
     }
-    setShowAddForm(false);
-    setEditingPaper(null);
-    setFormData({
-      name: '',
-      dateUpdate: new Date().toISOString().split('T')[0],
-      assignee: '',
-      paperWork: null
-    });
   };
 
   // Handle edit
@@ -168,18 +176,46 @@ const Paper = () => {
     setEditingPaper(paper);
     setFormData({
       name: paper.name,
-      dateUpdate: paper.dateUpdate,
+      dateUpdate: paper.dateUpdate.split('T')[0], // Format date for input
       assignee: paper.assignee,
-      paperWork: paper.paperWork
+      paperWork: null // Reset file input for editing
     });
     setShowAddForm(true);
   };
 
   // Handle delete
-  const handleDelete = (paperId) => {
+  const handleDelete = async (paperId) => {
     if (window.confirm('Are you sure you want to delete this paper?')) {
-      setPapers(papers.filter(p => p.id !== paperId));
+      try {
+        const response = await fetch(`${API_BASE_URL}/papers/${paperId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('Paper deleted successfully!');
+          fetchPapers(); // Refresh the list
+        } else {
+          alert(data.message || 'Failed to delete paper');
+        }
+      } catch (error) {
+        console.error('Error deleting paper:', error);
+        alert('Error deleting paper');
+      }
     }
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setFormData({
+      name: '',
+      dateUpdate: new Date().toISOString().split('T')[0],
+      assignee: '',
+      paperWork: null
+    });
+    setEditingPaper(null);
+    setShowAddForm(false);
   };
 
   // Handle file upload
@@ -188,11 +224,27 @@ const Paper = () => {
     if (file) {
       setFormData({
         ...formData,
-        paperWork: {
-          name: file.name,
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-        }
+        paperWork: file
       });
+    }
+  };
+
+  // Handle file download
+  const handleDownload = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/papers/download/${fileUrl}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Error downloading file');
     }
   };
 
@@ -216,7 +268,7 @@ const Paper = () => {
   // Summary stats
   const totalPapers = filteredPapers.length;
   const lastUpdated = filteredPapers.reduce((latest, paper) =>
-    !latest || paper.dateUpdate > latest ? paper.dateUpdate : latest, null
+    !latest || paper.dateUpdate > latest ? new Date(paper.dateUpdate).toLocaleDateString() : latest, null
   );
   const uniqueAssignees = [...new Set(filteredPapers.map(p => p.assignee))].length;
 
@@ -321,7 +373,7 @@ const Paper = () => {
                 >
                   <option value="all">All Assignees</option>
                   {teamMembers.map(member => (
-                    <option key={member.id} value={member.name}>{member.name}</option>
+                    <option key={member._id} value={member.name}>{member.name}</option>
                   ))}
                 </select>
               </div>
@@ -336,16 +388,7 @@ const Paper = () => {
                   {editingPaper ? 'Edit Paper' : 'Add Paper'}
                 </h3>
                 <button
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingPaper(null);
-                    setFormData({
-                      name: '',
-                      dateUpdate: new Date().toISOString().split('T')[0],
-                      assignee: '',
-                      paperWork: null
-                    });
-                  }}
+                  onClick={handleCancel}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                 >
                   <X className="h-5 w-5 text-gray-500" />
@@ -354,19 +397,20 @@ const Paper = () => {
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Paper Name
+                    Paper Name *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter paper name..."
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Last Updated
+                    Last Updated *
                   </label>
                   <input
                     type="date"
@@ -378,19 +422,29 @@ const Paper = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Assignee
+                    Assignee *
                   </label>
                   <select
                     value={formData.assignee}
                     onChange={e => setFormData({ ...formData, assignee: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    disabled={loadingUsers}
                   >
-                    <option value="">Select Assignee</option>
+                    <option value="">
+                      {loadingUsers ? 'Loading users...' : 'Select Assignee'}
+                    </option>
                     {teamMembers.map(member => (
-                      <option key={member.id} value={member.name}>{member.name} ({member.email})</option>
+                      <option key={member._id} value={member.name}>
+                        {member.name} ({member.email})
+                      </option>
                     ))}
                   </select>
+                  {teamMembers.length === 0 && !loadingUsers && (
+                    <p className="text-xs text-red-500 mt-1">
+                      No users found. Please add users to the system.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -399,40 +453,38 @@ const Paper = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="file"
-                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx,.xls"
                       onChange={handleFileChange}
                       className="block w-full text-sm text-gray-900 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                     {formData.paperWork && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formData.paperWork.name} ({formData.paperWork.size})
-                      </span>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{formData.paperWork.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {(formData.paperWork.size / (1024 * 1024)).toFixed(1)} MB
+                          </p>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
                 <div className="md:col-span-2 flex justify-end gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setEditingPaper(null);
-                      setFormData({
-                        name: '',
-                        dateUpdate: new Date().toISOString().split('T')[0],
-                        assignee: '',
-                        paperWork: null
-                      });
-                    }}
+                    onClick={handleCancel}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                    disabled={submitting}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    {editingPaper ? 'Update' : 'Save'}
+                    {submitting ? 'Saving...' : (editingPaper ? 'Update' : 'Save')} Paper
                   </button>
                 </div>
               </form>
@@ -477,19 +529,21 @@ const Paper = () => {
                       </tr>
                     ) : (
                       filteredPapers.map((paper) => (
-                        <tr key={paper.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr key={paper._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {paper.name}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Created: {paper.createdDate}
+                              Created: {new Date(paper.createdAt).toLocaleDateString()}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4 text-blue-500" />
-                              <span className="text-sm text-gray-900 dark:text-white">{paper.dateUpdate}</span>
+                              <span className="text-sm text-gray-900 dark:text-white">
+                                {new Date(paper.dateUpdate).toLocaleDateString()}
+                              </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -504,12 +558,17 @@ const Paper = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {paper.paperWork ? (
+                            {paper.paperWork?.originalName ? (
                               <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-gray-500" />
-                                <span className="text-sm text-blue-600 dark:text-blue-400">{paper.paperWork.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">({paper.paperWork.size})</span>
+                                <span className="text-sm text-blue-600 dark:text-blue-400">
+                                  {paper.paperWork.originalName}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  ({paper.paperWork.size})
+                                </span>
                                 <button
+                                  onClick={() => handleDownload(paper.paperWork.filename, paper.paperWork.originalName)}
                                   className="ml-2 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                   title="Download"
                                 >
@@ -529,7 +588,7 @@ const Paper = () => {
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDelete(paper.id)}
+                              onClick={() => handleDelete(paper._id)}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                               title="Delete"
                             >
