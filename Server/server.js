@@ -13,6 +13,9 @@ import studentListRouter from './Routes/studentListRoute.js';
 import blogRouter from './Routes/blogRoute.js';
 import meetingRouter from './Routes/meetingRoute.js';
 import activityRouter from './Routes/activityRoute.js';
+// import projectRouter from './Routes/projectRoute.js';
+import eventReportRouter from './Routes/eventReportRoute.js';
+import paperRouter from './Routes/PaperRoute.js'; // Add this line
 
 // Load environment variables
 dotenv.config();
@@ -114,6 +117,9 @@ app.use('/api/students', studentListRouter);
 app.use('/api/blogs', blogRouter);
 app.use('/api/meetings', meetingRouter);
 app.use('/api/activities', activityRouter);
+// app.use('/api/projects', projectRouter);
+app.use('/api/event-reports', eventReportRouter);
+app.use('/api/papers', paperRouter); // Add this line
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -133,6 +139,9 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      projects: '/api/projects',
+      eventReports: '/api/event-reports',
+      papers: '/api/papers', // Add this line
       health: '/api/health'
     }
   });
@@ -155,7 +164,6 @@ app.use((req, res) => {
     message: 'Route not found'
   });
 });
-
 
 // --- Server Startup ---
 const server = app.listen(PORT, () => {

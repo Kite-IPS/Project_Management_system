@@ -136,6 +136,15 @@ export const addMember = async (req, res) => {
       });
     }
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
     // Create user entry
     const user = new User({
       email,
@@ -146,6 +155,7 @@ export const addMember = async (req, res) => {
 
     // Create role entry
     const roleEntry = new Role({
+      name,
       email,
       role,
       batch,

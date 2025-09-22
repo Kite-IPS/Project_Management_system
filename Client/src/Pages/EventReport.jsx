@@ -24,6 +24,9 @@ const EventReport = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]); // Changed from static to state
+  const [loadingUsers, setLoadingUsers] = useState(false); // Loading state for users
 
   // Form state for adding/editing event reports
   const [formData, setFormData] = useState({
@@ -33,72 +36,69 @@ const EventReport = () => {
     eventWork: null
   });
 
-  // Mock team members for dropdown
-  const teamMembers = [
-    { id: 1, name: 'John Doe', email: 'john@company.com' },
-    { id: 2, name: 'Jane Smith', email: 'jane@company.com' },
-    { id: 3, name: 'Mike Wilson', email: 'mike@company.com' },
-    { id: 4, name: 'Sarah Johnson', email: 'sarah@company.com' },
-    { id: 5, name: 'David Brown', email: 'david@company.com' }
-  ];
+  // API Base URL
+  const API_BASE_URL = 'http://localhost:5000/api';
 
-  // Mock data for event reports
-  useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        sNo: 1,
-        name: 'Annual Tech Conference Report',
-        dateUpdated: '2025-09-15',
-        createdBy: 'John Doe',
-        eventWork: { name: 'tech_conference_report.pdf', size: '2.1 MB' },
-        createdDate: '2025-09-01'
-      },
-      {
-        id: 2,
-        sNo: 2,
-        name: 'Q3 Team Building Event',
-        dateUpdated: '2025-09-10',
-        createdBy: 'Jane Smith',
-        eventWork: { name: 'team_building_summary.docx', size: '1.5 MB' },
-        createdDate: '2025-09-05'
-      },
-      {
-        id: 3,
-        sNo: 3,
-        name: 'Product Launch Event Analysis',
-        dateUpdated: '2025-09-08',
-        createdBy: 'Mike Wilson',
-        eventWork: { name: 'product_launch_analysis.xlsx', size: '3.2 MB' },
-        createdDate: '2025-08-20'
-      },
-      {
-        id: 4,
-        sNo: 4,
-        name: 'Client Workshop Report',
-        dateUpdated: '2025-09-12',
-        createdBy: 'Sarah Johnson',
-        eventWork: { name: 'client_workshop.pptx', size: '4.7 MB' },
-        createdDate: '2025-09-02'
-      },
-      {
-        id: 5,
-        sNo: 5,
-        name: 'Quarterly Review Meeting',
-        dateUpdated: '2025-09-14',
-        createdBy: 'David Brown',
-        eventWork: { name: 'quarterly_review.pdf', size: '1.8 MB' },
-        createdDate: '2025-09-10'
+  // Fetch users from existing auth API
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const token = localStorage.getItem('accessToken'); // Assuming you store token in localStorage
+      
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the data to match the expected format
+        const transformedUsers = data.users.map(user => ({
+          _id: user._id || user.id,
+          name: user.displayName || user.email.split('@')[0],
+          email: user.email
+        }));
+        setTeamMembers(transformedUsers);
+      } else {
+        console.error('Failed to fetch users:', data.message);
+        setTeamMembers([]);
       }
-    ];
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setTeamMembers([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setEventReports(mockData);
+  // Fetch event reports from API
+  const fetchEventReports = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/event-reports`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setEventReports(data.data);
+      } else {
+        console.error('Failed to fetch event reports:', data.message);
+        alert('Failed to fetch event reports');
+      }
+    } catch (error) {
+      console.error('Error fetching event reports:', error);
+      alert('Error fetching event reports');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
 
-    return () => clearTimeout(timer);
+  // Load event reports and users on component mount
+  useEffect(() => {
+    fetchEventReports();
+    fetchUsers();
   }, []);
 
   // Filter event reports based on search and filter
@@ -113,7 +113,7 @@ const EventReport = () => {
   });
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.name.trim() || !formData.createdBy) {
@@ -121,35 +121,48 @@ const EventReport = () => {
       return;
     }
 
-    if (editingReport) {
-      // Update existing report
-      setEventReports(eventReports.map(report =>
-        report.id === editingReport.id
-          ? {
-              ...report,
-              name: formData.name,
-              dateUpdated: formData.dateUpdated,
-              createdBy: formData.createdBy,
-              eventWork: formData.eventWork || report.eventWork
-            }
-          : report
-      ));
-    } else {
-      // Add new report
-      const newReport = {
-        id: Math.max(...eventReports.map(r => r.id)) + 1,
-        sNo: eventReports.length + 1,
-        name: formData.name,
-        dateUpdated: formData.dateUpdated,
-        createdBy: formData.createdBy,
-        eventWork: formData.eventWork || { name: 'No file attached', size: '0 MB' },
-        createdDate: new Date().toISOString().split('T')[0]
-      };
-      setEventReports([...eventReports, newReport]);
-    }
+    setSubmitting(true);
 
-    // Reset form
-    handleCancel();
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('dateUpdated', formData.dateUpdated);
+      formDataToSend.append('createdBy', formData.createdBy);
+      
+      if (formData.eventWork && formData.eventWork instanceof File) {
+        formDataToSend.append('eventWork', formData.eventWork);
+      }
+
+      let response;
+      if (editingReport) {
+        // Update existing report
+        response = await fetch(`${API_BASE_URL}/event-reports/${editingReport._id}`, {
+          method: 'PUT',
+          body: formDataToSend
+        });
+      } else {
+        // Create new report
+        response = await fetch(`${API_BASE_URL}/event-reports`, {
+          method: 'POST',
+          body: formDataToSend
+        });
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(editingReport ? 'Event report updated successfully!' : 'Event report created successfully!');
+        handleCancel();
+        fetchEventReports(); // Refresh the list
+      } else {
+        alert(data.message || 'Failed to save event report');
+      }
+    } catch (error) {
+      console.error('Error saving event report:', error);
+      alert('Error saving event report');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle edit
@@ -157,17 +170,33 @@ const EventReport = () => {
     setEditingReport(report);
     setFormData({
       name: report.name,
-      dateUpdated: report.dateUpdated,
+      dateUpdated: report.dateUpdated.split('T')[0], // Format date for input
       createdBy: report.createdBy,
-      eventWork: report.eventWork
+      eventWork: null // Reset file input for editing
     });
     setShowAddForm(true);
   };
 
   // Handle delete
-  const handleDelete = (reportId) => {
+  const handleDelete = async (reportId) => {
     if (window.confirm('Are you sure you want to delete this event report?')) {
-      setEventReports(eventReports.filter(report => report.id !== reportId));
+      try {
+        const response = await fetch(`${API_BASE_URL}/event-reports/${reportId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('Event report deleted successfully!');
+          fetchEventReports(); // Refresh the list
+        } else {
+          alert(data.message || 'Failed to delete event report');
+        }
+      } catch (error) {
+        console.error('Error deleting event report:', error);
+        alert('Error deleting event report');
+      }
     }
   };
 
@@ -183,22 +212,39 @@ const EventReport = () => {
     setShowAddForm(false);
   };
 
-  // Handle file upload simulation
+  // Handle file upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       setFormData({
         ...formData,
-        eventWork: {
-          name: file.name,
-          size: (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        }
+        eventWork: file
       });
+    }
+  };
+
+  // Handle file download
+  const handleDownload = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/event-reports/download/${fileUrl}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Error downloading file');
     }
   };
 
   // Get file icon based on extension
   const getFileIcon = (fileName) => {
+    if (!fileName) return '📎';
     const extension = fileName.split('.').pop().toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -373,14 +419,22 @@ const EventReport = () => {
                     onChange={(e) => setFormData({...formData, createdBy: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    disabled={loadingUsers}
                   >
-                    <option value="">Select Creator</option>
+                    <option value="">
+                      {loadingUsers ? 'Loading users...' : 'Select Creator'}
+                    </option>
                     {teamMembers.map(member => (
-                      <option key={member.id} value={member.name}>
-                        {member.name}
+                      <option key={member._id} value={member.name}>
+                        {member.name} ({member.email})
                       </option>
                     ))}
                   </select>
+                  {teamMembers.length === 0 && !loadingUsers && (
+                    <p className="text-xs text-red-500 mt-1">
+                      No users found. Please add users to the system.
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">
@@ -399,7 +453,9 @@ const EventReport = () => {
                         <span className="text-lg">{getFileIcon(formData.eventWork.name)}</span>
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{formData.eventWork.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{formData.eventWork.size}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {(formData.eventWork.size / (1024 * 1024)).toFixed(1)} MB
+                          </p>
                         </div>
                       </div>
                     )}
@@ -416,10 +472,11 @@ const EventReport = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                    disabled={submitting}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    {editingReport ? 'Update' : 'Save'} Report
+                    {submitting ? 'Saving...' : (editingReport ? 'Update' : 'Save') + ' Report'}
                   </button>
                 </div>
               </form>
@@ -466,10 +523,10 @@ const EventReport = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredEventReports.map((report) => (
-                        <tr key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      filteredEventReports.map((report, index) => (
+                        <tr key={report._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {report.sNo}
+                            {index + 1}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -495,18 +552,23 @@ const EventReport = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              <span className="text-lg">{getFileIcon(report.eventWork.name)}</span>
+                              <span className="text-lg">{getFileIcon(report.eventWork?.originalName)}</span>
                               <div>
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {report.eventWork.name}
+                                  {report.eventWork?.originalName || 'No file attached'}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {report.eventWork.size}
+                                  {report.eventWork?.size || '0 MB'}
                                 </div>
                               </div>
-                              <button className="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors duration-200">
-                                <Download className="h-4 w-4 text-gray-500" />
-                              </button>
+                              {report.eventWork?.filename && (
+                                <button 
+                                  onClick={() => handleDownload(report.eventWork.filename, report.eventWork.originalName)}
+                                  className="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors duration-200"
+                                >
+                                  <Download className="h-4 w-4 text-gray-500" />
+                                </button>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -518,7 +580,7 @@ const EventReport = () => {
                                 <Edit className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={() => handleDelete(report.id)}
+                                onClick={() => handleDelete(report._id)}
                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                               >
                                 <Trash2 className="h-4 w-4" />
