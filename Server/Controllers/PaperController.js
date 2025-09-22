@@ -1,4 +1,4 @@
-import Paper from '../Models/PaperModel.js';
+import Paper from '../Models/paperModel.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

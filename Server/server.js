@@ -13,7 +13,7 @@ import studentListRouter from './Routes/studentListRoute.js';
 import blogRouter from './Routes/blogRoute.js';
 import meetingRouter from './Routes/meetingRoute.js';
 import activityRouter from './Routes/activityRoute.js';
-import projectRouter from './Routes/projectRoute.js';
+// import projectRouter from './Routes/projectRoute.js';
 import eventReportRouter from './Routes/eventReportRoute.js';
 import paperRouter from './Routes/PaperRoute.js'; // Add this line
 
@@ -117,7 +117,7 @@ app.use('/api/students', studentListRouter);
 app.use('/api/blogs', blogRouter);
 app.use('/api/meetings', meetingRouter);
 app.use('/api/activities', activityRouter);
-app.use('/api/projects', projectRouter);
+// app.use('/api/projects', projectRouter);
 app.use('/api/event-reports', eventReportRouter);
 app.use('/api/papers', paperRouter); // Add this line
 
