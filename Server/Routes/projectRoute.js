@@ -1,46 +1,38 @@
 import express from 'express';
 import {
   getProjects,
-  getProject,
+  getProjectById,
   createProject,
   updateProject,
   deleteProject,
-  addComment,
-  getTeamMembers
+  getProjectStats,
+  validateProject
 } from '../Controllers/ProjectController.js';
-import { authenticateToken, requireAdmin, requireModerator } from '../Middleware/authMiddleware.js';
+import { authenticateToken } from '../Middleware/authMiddleware.js'; // Updated import path
 
 const router = express.Router();
 
-// Apply authentication to all routes
+// Apply authentication middleware to all routes
 router.use(authenticateToken);
 
-// GET /api/projects/team-members - Get team members for project assignment
-// Access: Admin and Moderator only
-router.get('/team-members', requireModerator, getTeamMembers);
+// Routes
 
-// GET /api/projects - Get all projects with statistics
-// Access: Admin (all projects), Moderator/Member (assigned projects only)
+// GET /api/projects - Get all projects
 router.get('/', getProjects);
 
+// GET /api/projects/stats - Get project statistics
+router.get('/stats', getProjectStats);
+
 // GET /api/projects/:id - Get single project by ID
-// Access: Admin (any project), Moderator/Member (assigned projects only)
-router.get('/:id', getProject);
+router.get('/:id', getProjectById);
 
-// POST /api/projects - Create new project
-// Access: Admin and Moderator only
-router.post('/', requireModerator, createProject);
+// POST /api/projects - Create new project (Admin only)
+router.post('/', validateProject, createProject);
 
-// PUT /api/projects/:id - Update project
-// Access: Admin (any project), Moderator (assigned projects only)
-router.put('/:id', requireModerator, updateProject);
+// PUT /api/projects/:id - Update project (Admin and SPOC)
+router.put('/:id', validateProject, updateProject);
 
-// DELETE /api/projects/:id - Delete project
-// Access: Admin only
-router.delete('/:id', requireAdmin, deleteProject);
-
-// POST /api/projects/:id/comments - Add comment to project
-// Access: All authenticated users with project access
-router.post('/:id/comments', addComment);
+// DELETE /api/projects/:id - Delete project (Admin only)
+router.delete('/:id', deleteProject);
 
 export default router;

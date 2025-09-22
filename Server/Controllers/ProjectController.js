@@ -1,154 +1,110 @@
-import Project from '../Models/ProjectModel.js';
-import User from '../Models/UserModel.js';
-import mongoose from 'mongoose';
+import Project from '../models/Project.js';
+import User from '../Models/UserModel.js'; // Updated import path
+import { body, validationResult } from 'express-validator';
 
-// Helper function to get user access level for a project
-const getUserAccessLevel = async (userId, userRole, project) => {
-  if (userRole === 'admin') return 'admin';
-  if (userRole === 'moderator') return 'moderator';
+// Validation rules for project creation/update
+export const validateProject = [
+  body('projectName')
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Project name is required'),
   
-  // Check if user is assigned to the project or created it
-  const isAssigned = project.assignees.some(assignee => 
-    assignee.userId.toString() === userId.toString()
-  );
-  const isCreator = project.createdBy.toString() === userId.toString();
+  body('status')
+    .isIn(['Planning', 'In Progress', 'Completed', 'On Hold'])
+    .withMessage('Invalid status'),
   
-  if (isAssigned || isCreator) return 'member';
-  return 'none';
+  body('teamMembers')
+    .isArray()
+    .withMessage('Team members must be an array'),
+  
+  body('startDate')
+    .isISO8601()
+    .withMessage('Invalid start date'),
+  
+  body('endDate')
+    .isISO8601()
+    .withMessage('Invalid end date'),
+  
+  body('paperWork')
+    .optional({ nullable: true })
+    .isURL()
+    .withMessage('Invalid paper work URL'),
+  
+  body('projectTrack')
+    .optional({ nullable: true })
+    .isURL()
+    .withMessage('Invalid project track URL'),
+  
+  body('repository')
+    .optional({ nullable: true })
+    .isURL()
+    .withMessage('Invalid repository URL')
+];
+
+// Role-based access control helper (updated for your system)
+const checkPermissions = (userRole, action) => {
+  const permissions = {
+    Admin: { read: true, write: true, update: true, delete: true, view: true },
+    Manager: { read: true, write: true, update: true, delete: false, view: true },
+    Member: { read: true, write: false, update: false, delete: false, view: true }
+  };
+  
+  const userPermissions = permissions[userRole] || permissions.Member;
+  return userPermissions[action] || false;
 };
 
-// Helper function to build project query based on user role
-const buildProjectQuery = (userId, userRole, filters = {}) => {
-  let baseQuery = { isArchived: false, ...filters };
-  
-  // If not admin, only show projects where user is assigned or created
-  if (userRole !== 'admin') {
-    baseQuery.$or = [
-      { createdBy: userId },
-      { 'assignees.userId': userId }
-    ];
-  }
-  
-  return baseQuery;
-};
-
-// @desc    Get all projects with statistics
-// @route   GET /api/projects
-// @access  Private (Admin: all projects, Moderator/Member: assigned projects only)
+// Get all projects
 export const getProjects = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-    const {
-      status,
-      priority,
-      assignee,
-      search,
-      page = 1,
-      limit = 10,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
-
-    // Build filters
-    const filters = {};
-    if (status && status !== 'all') {
-      if (status === 'overdue') {
-        filters.status = { $ne: 'Done' };
-        filters.dueDate = { $lt: new Date() };
-      } else {
-        filters.status = status;
-      }
-    }
-    if (priority && priority !== 'all') filters.priority = priority;
-    if (assignee) filters['assignees.userId'] = assignee;
+    const userRole = req.user.role;
     
-    // Build search query
-    if (search) {
-      filters.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+    // Check if user has view permission
+    if (!checkPermissions(userRole, 'view')) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to view projects'
+      });
     }
 
-    // Build base query with user access control
-    const query = buildProjectQuery(userId, role, filters);
-
-    // Calculate pagination
-    const skip = (page - 1) * limit;
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    // Get projects with pagination
-    const [projects, totalProjects, statistics] = await Promise.all([
-      Project.find(query)
-        .populate('assignees.userId', 'displayName email')
-        .populate('createdBy', 'displayName email')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      Project.countDocuments(query),
-      Project.getStatistics(userId, role)
-    ]);
-
-    // Calculate pagination info
-    const totalPages = Math.ceil(totalProjects / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    const projects = await Project.find()
+      .populate('teamMembers', 'displayName email') // Updated to match your User model
+      .populate('createdBy', 'displayName email')
+      .populate('updatedBy', 'displayName email')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      data: {
-        projects,
-        statistics: {
-          total: statistics.total,
-          ongoing: statistics.inProgress,
-          pending: statistics.toDo,
-          completed: statistics.done,
-          review: statistics.review,
-          overdue: statistics.overdue
-        },
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          totalProjects,
-          hasNextPage,
-          hasPrevPage,
-          limit: parseInt(limit)
-        }
-      }
+      data: projects,
+      message: 'Projects retrieved successfully'
     });
 
   } catch (error) {
-    console.error('Get projects error:', error);
+    console.error('Error fetching projects:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch projects',
+      message: 'Error fetching projects',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// @desc    Get single project by ID
-// @route   GET /api/projects/:id
-// @access  Private (Admin: any project, Moderator/Member: assigned projects only)
-export const getProject = async (req, res) => {
+// Get single project by ID
+export const getProjectById = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-    const { id } = req.params;
-
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
+    const userRole = req.user.role;
+    
+    // Check if user has view permission
+    if (!checkPermissions(userRole, 'view')) {
+      return res.status(403).json({
         success: false,
-        message: 'Invalid project ID'
+        message: 'You do not have permission to view projects'
       });
     }
 
-    const project = await Project.findById(id)
-      .populate('assignees.userId', 'displayName email avatar')
+    const project = await Project.findById(req.params.id)
+      .populate('teamMembers', 'displayName email') // Updated to match your User model
       .populate('createdBy', 'displayName email')
-      .populate('comments.user', 'displayName email avatar')
-      .populate('activities.user', 'displayName email');
+      .populate('updatedBy', 'displayName email');
 
     if (!project) {
       return res.status(404).json({
@@ -157,297 +113,222 @@ export const getProject = async (req, res) => {
       });
     }
 
-    // Check access level
-    const accessLevel = await getUserAccessLevel(userId, role, project);
-    if (accessLevel === 'none') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this project'
-      });
-    }
-
     res.status(200).json({
       success: true,
-      data: {
-        project,
-        accessLevel
-      }
+      data: project,
+      message: 'Project retrieved successfully'
     });
 
   } catch (error) {
-    console.error('Get project error:', error);
+    console.error('Error fetching project:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch project',
+      message: 'Error fetching project',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// @desc    Create new project
-// @route   POST /api/projects
-// @access  Private (Admin and Moderator only)
+// Create new project
 export const createProject = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-
-    // Check permissions
-    if (!['admin', 'moderator'].includes(role)) {
+    const userRole = req.user.role;
+    console.log('User role:', userRole); // Add this for debugging
+    
+    // Check if user has write permission
+    if (!checkPermissions(userRole, 'write')) {
       return res.status(403).json({
         success: false,
-        message: 'Only admins and moderators can create projects'
+        message: 'You do not have permission to create projects'
+      });
+    }
+
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
       });
     }
 
     const {
-      title,
-      description,
-      assignees,
+      projectName,
+      status,
+      teamMembers,
       startDate,
-      dueDate,
-      status = 'To Do',
-      priority = 'Medium',
-      paperwork,
+      endDate,
+      paperWork,
       projectTrack,
-      repoLink,
-      milestones = [],
-      risks = []
+      repository
     } = req.body;
 
-    // Validate required fields
-    if (!title || !description || !assignees || assignees.length === 0 || !startDate || !dueDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: title, description, assignees, startDate, dueDate'
-      });
-    }
-
-    // Validate assignees exist
-    const assigneeUsers = await User.find({
-      _id: { $in: assignees }
-    }).select('displayName email avatar');
-
-    if (assigneeUsers.length !== assignees.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'One or more assignees not found'
-      });
-    }
-
-    // Format assignees with user info
-    const formattedAssignees = assigneeUsers.map(user => ({
-      userId: user._id,
-      name: user.displayName,
-      email: user.email,
-      avatar: user.avatar || user.displayName?.charAt(0) || 'U',
-      color: `bg-${['blue', 'green', 'purple', 'pink', 'indigo', 'yellow', 'red', 'teal', 'orange', 'cyan'][Math.floor(Math.random() * 10)]}-500`
-    }));
-
-    // Create project
-    const project = await Project.create({
-      title,
-      description,
-      assignees: formattedAssignees,
-      startDate,
-      dueDate,
+    // Create new project without verifying team members first
+    const newProject = new Project({
+      projectName,
       status,
-      priority,
-      paperwork,
-      projectTrack,
-      repoLink,
-      milestones,
-      risks,
-      createdBy: userId
+      teamMembers,
+      startDate,
+      endDate,
+      paperWork: paperWork || '',
+      projectTrack: projectTrack || '',
+      repository: repository || '',
+      createdBy: req.user.userId
     });
 
-    // Add creation activity
-    project.addActivity('status_change', { userId, displayName: req.user.displayName }, `created the project`);
-    await project.save();
+    await newProject.save();
 
-    // Populate the response
-    await project.populate('assignees.userId', 'displayName email');
-    await project.populate('createdBy', 'displayName email');
+    // Populate the created project
+    const populatedProject = await Project.findById(newProject._id)
+      .populate('teamMembers', 'displayName email')
+      .populate('createdBy', 'displayName email');
 
     res.status(201).json({
       success: true,
-      message: 'Project created successfully',
-      data: { project }
+      data: populatedProject,
+      message: 'Project created successfully'
     });
 
   } catch (error) {
-    console.error('Create project error:', error);
+    console.error('Error creating project:', error);
     
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: Object.values(error.errors).map(err => err.message)
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Failed to create project',
+      message: 'Error creating project',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// @desc    Update project
-// @route   PUT /api/projects/:id
-// @access  Private (Admin: any project, Moderator: assigned projects only)
+// Update project
 export const updateProject = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-    const { id } = req.params;
-
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
+    const userRole = req.user.role;
+    
+    // Check if user has update permission (Admin or SPOC)
+    if (!checkPermissions(userRole, 'update')) {
+      return res.status(403).json({
         success: false,
-        message: 'Invalid project ID'
+        message: 'You do not have permission to update projects'
       });
     }
 
-    const project = await Project.findById(id);
-    if (!project) {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const projectId = req.params.id;
+    
+    // Check if project exists
+    const existingProject = await Project.findById(projectId);
+    if (!existingProject) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
-      });
-    }
-
-    // Check permissions
-    const accessLevel = await getUserAccessLevel(userId, role, project);
-    if (!['admin', 'moderator'].includes(accessLevel)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions to update this project'
       });
     }
 
     const {
-      title,
-      description,
-      assignees,
-      startDate,
-      dueDate,
+      projectName,
       status,
-      priority,
-      progress,
-      paperwork,
+      teamMembers,
+      startDate,
+      endDate,
+      paperWork,
       projectTrack,
-      repoLink,
-      milestones,
-      risks
+      repository
     } = req.body;
 
-    // Track status changes for activity log
-    const oldStatus = project.status;
-    const statusChanged = status && status !== oldStatus;
-
-    // Handle assignees update
-    if (assignees && Array.isArray(assignees)) {
-      const assigneeUsers = await User.find({
-        _id: { $in: assignees }
-      }).select('displayName email avatar');
-
-      project.assignees = assigneeUsers.map(user => ({
-        userId: user._id,
-        name: user.displayName,
-        email: user.email,
-        avatar: user.avatar || user.displayName?.charAt(0) || 'U',
-        color: `bg-${['blue', 'green', 'purple', 'pink', 'indigo', 'yellow', 'red', 'teal', 'orange', 'cyan'][Math.floor(Math.random() * 10)]}-500`
-      }));
+    // Verify all team members exist
+    if (teamMembers && teamMembers.length > 0) {
+      const existingUsers = await User.find({ _id: { $in: teamMembers } });
+      if (existingUsers.length !== teamMembers.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more team members do not exist'
+        });
+      }
     }
 
-    // Update fields
-    if (title) project.title = title;
-    if (description) project.description = description;
-    if (startDate) project.startDate = startDate;
-    if (dueDate) project.dueDate = dueDate;
-    if (status) project.status = status;
-    if (priority) project.priority = priority;
-    if (progress !== undefined) project.progress = progress;
-    if (paperwork !== undefined) project.paperwork = paperwork;
-    if (projectTrack !== undefined) project.projectTrack = projectTrack;
-    if (repoLink !== undefined) project.repoLink = repoLink;
-    if (milestones) project.milestones = milestones;
-    if (risks) project.risks = risks;
-
-    project.updatedBy = userId;
-
-    // Add activity for status change
-    if (statusChanged) {
-      project.addActivity(
-        'status_change',
-        { userId, displayName: req.user.displayName },
-        `changed status from ${oldStatus} to ${status}`
-      );
-    }
-
-    await project.save();
-
-    // Populate the response
-    await project.populate('assignees.userId', 'displayName email');
-    await project.populate('createdBy', 'displayName email');
+    // Update project
+    const updatedProject = await Project.findByIdAndUpdate(
+      projectId,
+      {
+        projectName,
+        status,
+        teamMembers,
+        startDate,
+        endDate,
+        paperWork: paperWork || '',
+        projectTrack: projectTrack || '',
+        repository: repository || '',
+        updatedBy: req.user.userId // Updated to match your middleware
+      },
+      { 
+        new: true,
+        runValidators: true
+      }
+    ).populate('teamMembers', 'displayName email') // Updated to match your User model
+     .populate('createdBy', 'displayName email')
+     .populate('updatedBy', 'displayName email');
 
     res.status(200).json({
       success: true,
-      message: 'Project updated successfully',
-      data: { project }
+      data: updatedProject,
+      message: 'Project updated successfully'
     });
 
   } catch (error) {
-    console.error('Update project error:', error);
+    console.error('Error updating project:', error);
     
-    if (error.name === 'ValidationError') {
+    // Handle duplicate project name (if you add unique index)
+    if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        errors: Object.values(error.errors).map(err => err.message)
+        message: 'A project with this name already exists'
       });
     }
-
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to update project',
+      message: 'Error updating project',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// @desc    Delete project
-// @route   DELETE /api/projects/:id
-// @access  Private (Admin only)
+// Delete project (only for Admin)
 export const deleteProject = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-    const { id } = req.params;
-
-    // Only admins can delete projects
-    if (role !== 'admin') {
+    const userRole = req.user.role;
+    
+    // Only Admin can delete projects
+    if (userRole !== 'Admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only admins can delete projects'
+        message: 'You do not have permission to delete projects'
       });
     }
 
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid project ID'
-      });
-    }
-
-    const project = await Project.findById(id);
-    if (!project) {
+    const projectId = req.params.id;
+    
+    // Check if project exists
+    const existingProject = await Project.findById(projectId);
+    if (!existingProject) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
 
-    await Project.findByIdAndDelete(id);
+    await Project.findByIdAndDelete(projectId);
 
     res.status(200).json({
       success: true,
@@ -455,170 +336,62 @@ export const deleteProject = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete project error:', error);
+    console.error('Error deleting project:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete project',
+      message: 'Error deleting project',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
-// @desc    Add comment to project
-// @route   POST /api/projects/:id/comments
-// @access  Private (All authenticated users with project access)
-export const addComment = async (req, res) => {
+// Get project statistics
+export const getProjectStats = async (req, res) => {
   try {
-    const { userId, role } = req.user;
-    const { id } = req.params;
-    const { message } = req.body;
-
-    if (!message || message.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Comment message is required'
-      });
-    }
-
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid project ID'
-      });
-    }
-
-    const project = await Project.findById(id);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
-    }
-
-    // Check access level
-    const accessLevel = await getUserAccessLevel(userId, role, project);
-    if (accessLevel === 'none') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this project'
-      });
-    }
-
-    // Add comment
-    project.addComment({
-      userId,
-      displayName: req.user.displayName,
-      avatar: req.user.avatar,
-      color: req.user.color
-    }, message);
-
-    await project.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Comment added successfully',
-      data: { 
-        comment: project.comments[0] // Return the newly added comment
-      }
-    });
-
-  } catch (error) {
-    console.error('Add comment error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add comment',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// Updated getTeamMembers function in ProjectController.js
-// @desc    Get team members for project assignment
-// @route   GET /api/projects/team-members
-// @access  Private (All authenticated users - needed for creating/editing projects)
-export const getTeamMembers = async (req, res) => {
-  try {
-    const { role } = req.user;
-
-    // Allow all authenticated users to see team members when creating/editing projects
-    // but limit the data based on role
-    let selectFields = 'displayName email role';
+    const userRole = req.user.role;
     
-    // If user is admin, they can see more details
-    if (role === 'admin') {
-      selectFields += ' photoURL lastLoginAt createdAt';
-    }
-
-    const teamMembers = await User.find({ 
-      isActive: { $ne: false } // Include users where isActive is not explicitly false
-    }).select(selectFields).lean();
-
-    // Format team members
-    const formattedMembers = teamMembers.map((member, index) => ({
-      id: member._id,
-      name: member.displayName || member.email,
-      email: member.email,
-      avatar: member.photoURL || member.displayName?.charAt(0) || member.email?.charAt(0) || 'U',
-      color: `bg-${['blue', 'green', 'purple', 'pink', 'indigo', 'yellow', 'red', 'teal', 'orange', 'cyan'][index % 10]}-500`,
-      role: member.role || 'member'
-    }));
-
-    res.status(200).json({
-      success: true,
-      data: { teamMembers: formattedMembers }
-    });
-
-  } catch (error) {
-    console.error('Get team members error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch team members',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-};
-
-// Also add a separate endpoint for getting all users (admin only) if needed
-// @desc    Get all users (admin only)
-// @route   GET /api/projects/all-users
-// @access  Private (Admin only)
-export const getAllUsers = async (req, res) => {
-  try {
-    const { role } = req.user;
-
-    // Only admins can see all users with full details
-    if (role !== 'admin') {
+    // Check if user has view permission
+    if (!checkPermissions(userRole, 'view')) {
       return res.status(403).json({
         success: false,
-        message: 'Admin access required'
+        message: 'You do not have permission to view project statistics'
       });
     }
 
-    const users = await User.find({}).select('-password').lean();
+    const stats = await Project.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    const formattedUsers = users.map((user, index) => ({
-      id: user._id,
-      name: user.displayName || user.email,
-      email: user.email,
-      avatar: user.photoURL || user.displayName?.charAt(0) || user.email?.charAt(0) || 'U',
-      color: `bg-${['blue', 'green', 'purple', 'pink', 'indigo', 'yellow', 'red', 'teal', 'orange', 'cyan'][index % 10]}-500`,
-      role: user.role || 'member',
-      isActive: user.isActive !== false,
-      authProvider: user.authProvider,
-      createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt
-    }));
+    const totalProjects = await Project.countDocuments();
+    const activeProjects = await Project.countDocuments({ 
+      status: { $in: ['Planning', 'In Progress'] }
+    });
+
+    const formattedStats = {
+      total: totalProjects,
+      active: activeProjects,
+      byStatus: stats.reduce((acc, stat) => {
+        acc[stat._id.toLowerCase().replace(' ', '_')] = stat.count;
+        return acc;
+      }, {})
+    };
 
     res.status(200).json({
       success: true,
-      data: { users: formattedUsers }
+      data: formattedStats,
+      message: 'Project statistics retrieved successfully'
     });
 
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error('Error fetching project statistics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch users',
+      message: 'Error fetching project statistics',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
