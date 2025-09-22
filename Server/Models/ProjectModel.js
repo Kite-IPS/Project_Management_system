@@ -16,11 +16,19 @@ const projectSchema = new mongoose.Schema({
     },
     default: 'Planning'
   },
-  teamMembers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'At least one team member is required']
-  }],
+  teamMembers: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    required: [true, 'At least one team member is required'],
+    validate: {
+      validator: function(value) {
+        return value && value.length > 0;
+      },
+      message: 'At least one team member is required'
+    }
+  },
   startDate: {
     type: Date,
     required: [true, 'Start date is required']
@@ -37,39 +45,54 @@ const projectSchema = new mongoose.Schema({
   },
   paperWork: {
     type: String,
+    default: '',
+    trim: true,
     validate: {
       validator: function(value) {
         if (!value) return true; // Optional field
-        const urlRegex = /^https?:\/\/.+/;
-        return urlRegex.test(value);
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
       },
-      message: 'Paper work must be a valid URL'
-    },
-    trim: true
+      message: 'Paper work must be a valid URL if provided'
+    }
   },
   projectTrack: {
     type: String,
+    default: '',
+    trim: true,
     validate: {
       validator: function(value) {
         if (!value) return true; // Optional field
-        const urlRegex = /^https?:\/\/.+/;
-        return urlRegex.test(value);
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
       },
-      message: 'Project track must be a valid URL'
-    },
-    trim: true
+      message: 'Project track must be a valid URL if provided'
+    }
   },
   repository: {
     type: String,
+    default: '',
+    trim: true,
     validate: {
       validator: function(value) {
         if (!value) return true; // Optional field
-        const urlRegex = /^https?:\/\/.+/;
-        return urlRegex.test(value);
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
       },
-      message: 'Repository must be a valid URL'
-    },
-    trim: true
+      message: 'Repository must be a valid URL if provided'
+    }
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

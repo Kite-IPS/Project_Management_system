@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../Components/Sidebar.jsx';
 import {
   FolderOpen,
   Users,
@@ -43,9 +43,9 @@ const Project = () => {
   const [formData, setFormData] = useState({
     projectName: '',
     status: 'Planning',
-    teamMembers: [],
-    startDate: '',
-    endDate: '',
+    teamMembers: [], // Array of user IDs
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
     paperWork: '',
     projectTrack: '',
     repository: ''
@@ -246,8 +246,10 @@ const Project = () => {
       }
     } catch (error) {
       console.error('Error saving project:', error);
+      const errorMessage = error.response?.data?.message;
+      console.log('Server error response:', error.response?.data); // Add detailed error logging
       setError(
-        error.response?.data?.message || 
+        errorMessage ||
         error.message || 
         'Error saving project. Please try again.'
       );

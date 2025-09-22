@@ -1,6 +1,7 @@
-import Project from '../models/Project.js';
+import Project from '../Models/ProjectModel.js';
 import User from '../Models/UserModel.js'; // Updated import path
 import { body, validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 
 // Validation rules for project creation/update
 export const validateProject = [
@@ -14,8 +15,17 @@ export const validateProject = [
     .withMessage('Invalid status'),
   
   body('teamMembers')
-    .isArray()
-    .withMessage('Team members must be an array'),
+    .isArray({ min: 1 })
+    .withMessage('At least one team member is required')
+    .custom((value) => {
+      // Check if all team members are valid ObjectIds
+      for (const member of value) {
+        if (!mongoose.Types.ObjectId.isValid(member)) {
+          throw new Error(`Invalid team member ID: ${member}`);
+        }
+      }
+      return true;
+    }),
   
   body('startDate')
     .isISO8601()
@@ -26,18 +36,40 @@ export const validateProject = [
     .withMessage('Invalid end date'),
   
   body('paperWork')
-    .optional({ nullable: true })
-    .isURL()
-    .withMessage('Invalid paper work URL'),
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value) return true;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Invalid paper work URL');
+      }
+    }),
   
   body('projectTrack')
-    .optional({ nullable: true })
-    .isURL()
-    .withMessage('Invalid project track URL'),
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value) return true;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Invalid project track URL');
+      }
+    }),
   
   body('repository')
-    .optional({ nullable: true })
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value) return true;
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Invalid repository URL');
+      }
+    })
     .withMessage('Invalid repository URL')
 ];
 
@@ -132,8 +164,12 @@ export const getProjectById = async (req, res) => {
 // Create new project
 export const createProject = async (req, res) => {
   try {
+    console.log('Request body:', JSON.stringify(req.body, null, 2)); // Pretty print the request body
     const userRole = req.user.role;
     console.log('User role:', userRole); // Add this for debugging
+    
+    // Log team members specifically
+    console.log('Team members:', req.body.teamMembers);
     
     // Check if user has write permission
     if (!checkPermissions(userRole, 'write')) {
@@ -146,10 +182,12 @@ export const createProject = async (req, res) => {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const errArray = errors.array();
+      console.log('Validation errors:', errArray);
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+        message: errArray.map(err => `${err.path}: ${err.msg}`).join(', '),
+        errors: errArray
       });
     }
 
