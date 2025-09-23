@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../Components/Sidebar.jsx';
 import {
   Calendar,
   Users,
