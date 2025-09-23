@@ -30,7 +30,7 @@ router.get('/:id', getProjectById);
 router.post('/', validateProject, createProject);
 
 // PUT /api/projects/:id - Update project (Admin and SPOC)
-router.put('/:id', validateProject, updateProject);
+router.put('/update/:id', updateProject);
 
 // DELETE /api/projects/:id - Delete project (Admin only)
 router.delete('/:id', deleteProject);

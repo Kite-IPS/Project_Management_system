@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Sidebar from '../Components/Sidebar.jsx';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Sidebar from "../Components/Sidebar.jsx";
 import {
   FolderOpen,
   Users,
@@ -14,9 +14,9 @@ import {
   X,
   Eye,
   ExternalLink,
-  Calendar
-} from 'lucide-react';
-import axios from 'axios';
+  Calendar,
+} from "lucide-react";
+import axios from "axios";
 
 const Project = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -26,7 +26,7 @@ const Project = () => {
     completed: 0,
     inProgress: 0,
     onHold: 0,
-    planning: 0
+    planning: 0,
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,45 +34,59 @@ const Project = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingProject, setViewingProject] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [userRole, setUserRole] = useState('Member'); // Default to Member
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [userRole, setUserRole] = useState("Member"); // Default to Member
   const [currentUserId, setCurrentUserId] = useState(null); // Track current user ID
 
   // Form state for adding/editing projects
   const [formData, setFormData] = useState({
-    projectName: '',
-    status: 'Planning',
+    projectName: "",
+    status: "Planning",
     teamMembers: [], // Array of user IDs
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
-    paperWork: '',
-    projectTrack: '',
-    repository: ''
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0], // 7 days from now
+    paperWork: "",
+    projectTrack: "",
+    repository: "",
   });
 
   // Error state
   const [error, setError] = useState(null);
 
   // API base URL
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = "http://localhost:5000/api";
 
   // Configure axios with auth token
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
     return {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
     };
   };
 
   // Enhanced role-based permissions
   const permissions = {
     Admin: { read: true, write: true, update: true, delete: true, view: true },
-    Manager: { read: true, write: true, update: true, delete: false, view: true },
-    Member: { read: false, write: false, update: false, delete: false, view: true }
+    Manager: {
+      read: true,
+      write: true,
+      update: true,
+      delete: false,
+      view: true,
+    },
+    Member: {
+      read: false,
+      write: false,
+      update: false,
+      delete: false,
+      view: true,
+    },
   };
 
   const userPermissions = permissions[userRole] || permissions.Member;
@@ -80,89 +94,89 @@ const Project = () => {
   // Get current user information and set role correctly
   const fetchCurrentUserRole = async () => {
     try {
-      console.log('Fetching current user role...');
-      
+
       const response = await axios.get(
         `${API_BASE_URL}/auth/profile`,
         getAuthHeaders()
       );
-      
-      console.log('User API response:', response.data);
-      
+
+      console.table("User API response:", response.data.user);
+
       if (response.data.success && response.data.user) {
         const user = response.data.user;
-        const role = user.role || 'Member';
+        const role = user.role || "Member";
         const userId = user._id || user.id;
-        
-        console.log('Setting user role to:', role);
-        console.log('Setting user ID to:', userId);
-        
+
         setUserRole(role);
         setCurrentUserId(userId);
-        
+
         return { role, userId };
       }
     } catch (error) {
-      console.error('Error fetching current user role from API:', error);
-      
+      console.error("Error fetching current user role from API:", error);
+
       // Fallback to token parsing if API call fails
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem("accessToken");
       if (token) {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('Token payload:', payload);
-          
+          const payload = JSON.parse(atob(token.split(".")[1]));
+
           // Try different possible field names for role and user ID
-          const role = payload.role || payload.userRole || payload.user?.role || 'Member';
-          const userId = payload.userId || payload.id || payload.user?.id || payload.user?._id || payload.sub;
-          
-          console.log('Fallback - Setting role to:', role);
-          console.log('Fallback - Setting user ID to:', userId);
-          
+          const role =
+            payload.role || payload.userRole || payload.user?.role || "Member";
+          const userId =
+            payload.userId ||
+            payload.id ||
+            payload.user?.id ||
+            payload.user?._id ||
+            payload.sub;
+
           setUserRole(role);
           setCurrentUserId(userId);
-          
+
           return { role, userId };
         } catch (tokenError) {
-          console.error('Error parsing token:', tokenError);
-          setUserRole('Member');
+          console.error("Error parsing token:", tokenError);
+          setUserRole("Member");
           setCurrentUserId(null);
         }
       }
     }
-    
-    return { role: 'Member', userId: null };
+
+    return { role: "Member", userId: null };
   };
 
   // Fetch users for the dropdown (only show relevant users based on role)
   const fetchUsers = async () => {
     try {
-      console.log('Fetching users...');
-      
+
       const response = await axios.get(
         `${API_BASE_URL}/auth/users`,
         getAuthHeaders()
       );
 
-      console.log('Users API response:', response.data);
+      console.table("Users API response:", response.data.users);
 
       if (response.data.success && Array.isArray(response.data.users)) {
-        const processedUsers = response.data.users.map(user => ({
+        const processedUsers = response.data.users.map((user) => ({
           ...user,
           _id: user._id || user.id,
-          displayName: user.displayName || user.name || user.email?.split('@')[0] || 'Unknown User'
+          displayName:
+            user.displayName ||
+            user.name ||
+            user.email?.split("@")[0] ||
+            "Unknown User",
         }));
-        
-        console.log('Processed users:', processedUsers);
+
         setUsers(processedUsers);
       } else {
-        console.error('Invalid users response structure:', response.data);
+        console.error("Invalid users response structure:", response.data);
         setUsers([]);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       if (error.response?.status === 403) {
-        console.log('User does not have permission to fetch users list');
+        console.log("User does not have permission to fetch users list");
       }
       setUsers([]);
     }
@@ -172,23 +186,22 @@ const Project = () => {
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Fetching projects...');
-      
+
       const response = await axios.get(
         `${API_BASE_URL}/projects`,
         getAuthHeaders()
       );
 
-      console.log('Projects API response:', response.data);
+      console.table("Projects API response:", response.data.data);
 
       if (response.data.success && Array.isArray(response.data.data)) {
         setProjectData(response.data.data);
       } else {
-        console.error('Invalid projects response structure:', response.data);
+        console.error("Invalid projects response structure:", response.data);
         setProjectData([]);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
       setProjectData([]);
     } finally {
       setLoading(false);
@@ -198,81 +211,128 @@ const Project = () => {
   // Handle form submission for adding/editing projects
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       setError(null);
-      
+
       // Basic validation
       if (!formData.projectName.trim()) {
-        setError('Project name is required');
+        setError("Project name is required");
         return;
       }
 
       if (!formData.startDate || !formData.endDate) {
-        setError('Start and end dates are required');
+        setError("Start and end dates are required");
         return;
       }
 
-      // Prepare the payload
+      // Client-side date validation using string comparison (more reliable for YYYY-MM-DD format)
+      if (formData.endDate <= formData.startDate) {
+        setError("End date must be after start date");
+        return;
+      }
+
+      // Prepare the payload - send dates as YYYY-MM-DD format (don't add time zones)
       const payload = {
         ...formData,
-        teamMembers: formData.teamMembers.map(id => id.toString())
+        // Keep dates in YYYY-MM-DD format - let the backend handle timezone conversion
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        teamMembers: formData.teamMembers.map((id) => id.toString()),
       };
 
-      console.log('Submitting project data:', payload);
 
-      const response = await axios.post(
-        `${API_BASE_URL}/projects`,
-        payload,
-        getAuthHeaders()
-      );
+      let response;
+      if (editingRecord) {
+        response = await axios.put(
+          `${API_BASE_URL}/projects/update/${editingRecord._id}`,
+          payload,
+          getAuthHeaders()
+        );
+      } else {
+        response = await axios.post(
+          `${API_BASE_URL}/projects`,
+          payload,
+          getAuthHeaders()
+        );
+      }
 
       if (response.data.success) {
         await fetchProjects();
         setShowAddForm(false);
         setEditingRecord(null);
         setFormData({
-          projectName: '',
-          status: 'Planning',
+          projectName: "",
+          status: "Planning",
           teamMembers: [],
-          startDate: '',
-          endDate: '',
-          paperWork: '',
-          projectTrack: '',
-          repository: ''
+          startDate: new Date().toISOString().split("T")[0],
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+          paperWork: "",
+          projectTrack: "",
+          repository: "",
         });
       } else {
-        setError(response.data.message || 'Failed to create project');
+        setError(response.data.message || "Failed to save project");
       }
     } catch (error) {
-      console.error('Error saving project:', error);
+      console.error("Error saving project:", error);
       const errorMessage = error.response?.data?.message;
-      console.log('Server error response:', error.response?.data); // Add detailed error logging
       setError(
         errorMessage ||
-        error.message || 
-        'Error saving project. Please try again.'
+          error.message ||
+          "Error saving project. Please try again."
       );
     }
   };
-
+  // Handle edit button click
   // Handle edit button click
   const handleEdit = (record) => {
     if (!userPermissions.update) {
-      setError('You do not have permission to edit projects.');
+      setError("You do not have permission to edit projects.");
       return;
     }
 
+    // Helper function to format date for input (ensures YYYY-MM-DD format)
+    const formatDateForInput = (dateString) => {
+      if (!dateString) return "";
+      try {
+        // Handle both ISO string and date object
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          console.warn("Invalid date:", dateString);
+          return "";
+        }
+
+        // Get the date in local timezone and format as YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error("Error formatting date:", error);
+        return "";
+      }
+    };
+
+    const formattedStartDate = formatDateForInput(record.startDate);
+    const formattedEndDate = formatDateForInput(record.endDate);
+
     setEditingRecord(record);
     setFormData({
-      projectName: record.projectName || '',
-      status: record.status || 'Planning',
-      teamMembers: record.teamMembers?.map(member => member._id || member.id || member) || [],
-      startDate: record.startDate ? new Date(record.startDate).toISOString().split('T')[0] : '',
-      endDate: record.endDate ? new Date(record.endDate).toISOString().split('T')[0] : '',
-      paperWork: record.paperWork || '',
-      projectTrack: record.projectTrack || '',
-      repository: record.repository || ''
+      projectName: record.projectName || "",
+      status: record.status || "Planning",
+      teamMembers:
+        record.teamMembers?.map(
+          (member) => member._id || member.id || member
+        ) || [],
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+      paperWork: record.paperWork || "",
+      projectTrack: record.projectTrack || "",
+      repository: record.repository || "",
     });
     setShowAddForm(true);
   };
@@ -286,14 +346,14 @@ const Project = () => {
   // Handle cancel edit/add
   const handleCancel = () => {
     setFormData({
-      projectName: '',
-      status: 'Planning',
+      projectName: "",
+      status: "Planning",
       teamMembers: [],
-      startDate: '',
-      endDate: '',
-      paperWork: '',
-      projectTrack: '',
-      repository: ''
+      startDate: "",
+      endDate: "",
+      paperWork: "",
+      projectTrack: "",
+      repository: "",
     });
     setEditingRecord(null);
     setShowAddForm(false);
@@ -303,7 +363,7 @@ const Project = () => {
   // Handle add project button click
   const handleAddProject = () => {
     if (!userPermissions.write) {
-      setError('You do not have permission to add projects.');
+      setError("You do not have permission to add projects.");
       return;
     }
     setShowAddForm(true);
@@ -311,15 +371,17 @@ const Project = () => {
 
   // Filter project data based on search and status filter
   const filteredProjects = useMemo(() => {
-    return projectData.filter(project => {
-      const matchesSearch = 
+    return projectData.filter((project) => {
+      const matchesSearch =
         project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.teamMembers?.some(member => 
-          (member.displayName || member.name || member.email || '')
-            .toLowerCase().includes(searchTerm.toLowerCase())
+        project.teamMembers?.some((member) =>
+          (member.displayName || member.name || member.email || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
         );
 
-      const matchesStatus = filterStatus === 'all' || 
+      const matchesStatus =
+        filterStatus === "all" ||
         project.status?.toLowerCase() === filterStatus.toLowerCase();
 
       return matchesSearch && matchesStatus;
@@ -329,13 +391,13 @@ const Project = () => {
   // Get status icon and color
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Completed':
+      case "Completed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'In Progress':
+      case "In Progress":
         return <Clock className="h-5 w-5 text-blue-500" />;
-      case 'On Hold':
+      case "On Hold":
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case 'Planning':
+      case "Planning":
         return <Clock className="h-5 w-5 text-purple-500" />;
       default:
         return <Clock className="h-5 w-5 text-gray-500" />;
@@ -345,38 +407,29 @@ const Project = () => {
   // Initialize data on component mount
   useEffect(() => {
     const initializeData = async () => {
-      console.log('Initializing component data...');
-      
+
       // Fetch user role first
       const { role, userId } = await fetchCurrentUserRole();
-      
+
       // Then fetch other data
-      if (role === 'Admin' || role === 'Manager') {
+      if (role === "Admin" || role === "Manager") {
         await fetchUsers();
       }
       await fetchProjects();
     };
-    
+
     initializeData();
   }, []);
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not set';
+    if (!dateString) return "Not set";
     try {
       return new Date(dateString).toLocaleDateString();
     } catch (error) {
-      return 'Invalid date';
+      return "Invalid date";
     }
   };
-
-  // Debug information (remove in production)
-  useEffect(() => {
-    console.log('Current user role:', userRole);
-    console.log('Current user ID:', currentUserId);
-    console.log('User permissions:', userPermissions);
-    console.log('Available users:', users.length);
-  }, [userRole, currentUserId, userPermissions, users]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -391,9 +444,14 @@ const Project = () => {
               </h1>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Role: <span className="font-medium text-blue-600 dark:text-blue-400">{userRole}</span>
+              Role:{" "}
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                {userRole}
+              </span>
               {!userPermissions.write && (
-                <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">(Read Only)</span>
+                <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                  (Read Only)
+                </span>
               )}
             </div>
           </div>
@@ -404,7 +462,11 @@ const Project = () => {
       <Sidebar onToggle={setSidebarCollapsed} />
 
       {/* Main Content */}
-      <main className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <main
+        className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? "ml-16" : "ml-64"
+        }`}
+      >
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {/* Summary Stats */}
           {!loading && filteredProjects.length > 0 && (
@@ -413,8 +475,12 @@ const Project = () => {
                 <div className="flex items-center">
                   <FolderOpen className="h-8 w-8 text-blue-500" />
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{filteredProjects.length}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Total Projects
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {filteredProjects.length}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -423,9 +489,14 @@ const Project = () => {
                 <div className="flex items-center">
                   <CheckCircle className="h-8 w-8 text-green-500" />
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Completed
+                    </p>
                     <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
-                      {filteredProjects.filter(p => p.status === 'Completed').length}
+                      {
+                        filteredProjects.filter((p) => p.status === "Completed")
+                          .length
+                      }
                     </p>
                   </div>
                 </div>
@@ -435,9 +506,15 @@ const Project = () => {
                 <div className="flex items-center">
                   <Clock className="h-8 w-8 text-blue-500" />
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      In Progress
+                    </p>
                     <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">
-                      {filteredProjects.filter(p => p.status === 'In Progress').length}
+                      {
+                        filteredProjects.filter(
+                          (p) => p.status === "In Progress"
+                        ).length
+                      }
                     </p>
                   </div>
                 </div>
@@ -447,9 +524,14 @@ const Project = () => {
                 <div className="flex items-center">
                   <AlertTriangle className="h-8 w-8 text-yellow-500" />
                   <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">On Hold</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      On Hold
+                    </p>
                     <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
-                      {filteredProjects.filter(p => p.status === 'On Hold').length}
+                      {
+                        filteredProjects.filter((p) => p.status === "On Hold")
+                          .length
+                      }
                     </p>
                   </div>
                 </div>
@@ -510,7 +592,7 @@ const Project = () => {
             <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {editingRecord ? 'Edit Project' : 'Add Project'}
+                  {editingRecord ? "Edit Project" : "Add Project"}
                 </h3>
                 <button
                   onClick={handleCancel}
@@ -520,7 +602,10 @@ const Project = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form
+                onSubmit={handleSubmit}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Project Name *
@@ -528,7 +613,9 @@ const Project = () => {
                   <input
                     type="text"
                     value={formData.projectName}
-                    onChange={(e) => setFormData({...formData, projectName: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectName: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter project name..."
                     required
@@ -541,7 +628,9 @@ const Project = () => {
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="Planning">Planning</option>
@@ -553,8 +642,11 @@ const Project = () => {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Team Members * {users.length === 0 && (
-                      <span className="text-red-500 text-xs">(No users available)</span>
+                    Team Members *{" "}
+                    {users.length === 0 && (
+                      <span className="text-red-500 text-xs">
+                        (No users available)
+                      </span>
                     )}
                   </label>
                   {users.length > 0 ? (
@@ -562,18 +654,25 @@ const Project = () => {
                       multiple
                       value={formData.teamMembers}
                       onChange={(e) => {
-                        const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
-                        console.log('Selected team members:', selectedValues);
-                        setFormData({...formData, teamMembers: selectedValues});
+                        const selectedValues = Array.from(
+                          e.target.selectedOptions,
+                          (option) => option.value
+                        );
+                        console.table("Selected team members:", selectedValues);
+                        setFormData({
+                          ...formData,
+                          teamMembers: selectedValues,
+                        });
                       }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
                       required
                     >
-                      {users.map(user => {
+                      {users.map((user) => {
                         const userId = user._id || user.id;
                         return (
                           <option key={userId} value={userId}>
-                            {user.displayName} ({user.email}) - {user.role || 'Member'}
+                            {user.displayName} ({user.email}) -{" "}
+                            {user.role || "Member"}
                           </option>
                         );
                       })}
@@ -595,7 +694,9 @@ const Project = () => {
                   <input
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -608,7 +709,9 @@ const Project = () => {
                   <input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min={formData.startDate}
                     required
@@ -622,7 +725,9 @@ const Project = () => {
                   <input
                     type="url"
                     value={formData.paperWork}
-                    onChange={(e) => setFormData({...formData, paperWork: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, paperWork: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="https://..."
                   />
@@ -635,7 +740,9 @@ const Project = () => {
                   <input
                     type="url"
                     value={formData.projectTrack}
-                    onChange={(e) => setFormData({...formData, projectTrack: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectTrack: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="https://..."
                   />
@@ -648,7 +755,9 @@ const Project = () => {
                   <input
                     type="url"
                     value={formData.repository}
-                    onChange={(e) => setFormData({...formData, repository: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, repository: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="https://github.com/..."
                   />
@@ -668,7 +777,7 @@ const Project = () => {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors duration-200"
                   >
                     <Save className="h-4 w-4" />
-                    {editingRecord ? 'Update' : 'Save'}
+                    {editingRecord ? "Update" : "Save"}
                   </button>
                 </div>
               </form>
@@ -693,7 +802,9 @@ const Project = () => {
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading projects...</span>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">
+                  Loading projects...
+                </span>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -723,13 +834,19 @@ const Project = () => {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredProjects.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td
+                          colSpan="6"
+                          className="px-6 py-4 text-center text-gray-500 dark:text-gray-400"
+                        >
                           No projects found
                         </td>
                       </tr>
                     ) : (
                       filteredProjects.map((project) => (
-                        <tr key={project._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <tr
+                          key={project._id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -746,14 +863,17 @@ const Project = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            {project.teamMembers && project.teamMembers.length > 0 ? (
+                            {project.teamMembers &&
+                            project.teamMembers.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
                                 {project.teamMembers.map((member, index) => (
                                   <span
                                     key={member._id || index}
                                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200"
                                   >
-                                    {member.displayName || member.email || 'Unknown User'}
+                                    {member.displayName ||
+                                      member.email ||
+                                      "Unknown User"}
                                   </span>
                                 ))}
                               </div>
@@ -767,7 +887,8 @@ const Project = () => {
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4 text-gray-500" />
                               <span className="text-sm text-gray-900 dark:text-white">
-                                {formatDate(project.startDate)} - {formatDate(project.endDate)}
+                                {formatDate(project.startDate)} -{" "}
+                                {formatDate(project.endDate)}
                               </span>
                             </div>
                           </td>
@@ -780,7 +901,10 @@ const Project = () => {
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
-                                  <ExternalLink className="h-4 w-4" title="Paper Work" />
+                                  <ExternalLink
+                                    className="h-4 w-4"
+                                    title="Paper Work"
+                                  />
                                 </a>
                               )}
                               {project.projectTrack && (
@@ -790,7 +914,10 @@ const Project = () => {
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
-                                  <ExternalLink className="h-4 w-4" title="Project Track" />
+                                  <ExternalLink
+                                    className="h-4 w-4"
+                                    title="Project Track"
+                                  />
                                 </a>
                               )}
                               {project.repository && (
@@ -800,7 +927,10 @@ const Project = () => {
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
-                                  <ExternalLink className="h-4 w-4" title="Repository" />
+                                  <ExternalLink
+                                    className="h-4 w-4"
+                                    title="Repository"
+                                  />
                                 </a>
                               )}
                             </div>
@@ -881,7 +1011,8 @@ const Project = () => {
                     Timeline
                   </h4>
                   <p className="text-gray-900 dark:text-white">
-                    {formatDate(viewingProject.startDate)} - {formatDate(viewingProject.endDate)}
+                    {formatDate(viewingProject.startDate)} -{" "}
+                    {formatDate(viewingProject.endDate)}
                   </p>
                 </div>
 
