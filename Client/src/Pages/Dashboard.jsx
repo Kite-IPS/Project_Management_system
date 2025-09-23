@@ -25,6 +25,10 @@ const Dashboard = () => {
   // Configure axios with auth token
   const getAuthHeaders = () => {
     const token = localStorage.getItem("accessToken");
+    if (!token) {
+      console.log('No access token found');
+      return null;
+    }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -36,9 +40,15 @@ const Dashboard = () => {
   // Get current user information and set role correctly
   const fetchCurrentUserRole = async () => {
     try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders) {
+        console.log('No auth headers available, skipping API call');
+        return;
+      }
+
       const response = await axios.get(
         `${API_BASE_URL}/auth/profile`,
-        getAuthHeaders()
+        authHeaders
       );
 
       console.table("User API response:", response.data.user);
@@ -89,6 +99,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const initializeData = async () => {
+      // Check if token is available before making API calls
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.log('No access token available, waiting for authentication...');
+        return;
+      }
+
+      console.log('Token available, initializing dashboard data...');
+      
       // Fetch user role first
       await fetchCurrentUserRole();
       
@@ -98,6 +117,18 @@ const Dashboard = () => {
     };
 
     initializeData();
+
+    // Listen for storage events (when token is added)
+    const handleStorageChange = () => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        console.log('Token detected, reinitializing data...');
+        initializeData();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleLogout = async () => {
@@ -113,7 +144,14 @@ const Dashboard = () => {
   const fetchActivities = async () => {
     try {
       setLoadingActivities(true);
-      const response = await axios.get(`${API_BASE_URL}/activities/recent?limit=8`, getAuthHeaders());
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders) {
+        console.log('No auth headers available for activities, skipping API call');
+        setLoadingActivities(false);
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/activities/recent?limit=8`, authHeaders);
       
       if (response.data.success) {
         setActivities(response.data.data);
@@ -153,7 +191,14 @@ const Dashboard = () => {
   const fetchProjects = async () => {
     try {
       setLoadingProjects(true);
-      const response = await axios.get(`${API_BASE_URL}/projects`, getAuthHeaders());
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders) {
+        console.log('No auth headers available for projects, skipping API call');
+        setLoadingProjects(false);
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/projects`, authHeaders);
       
       console.table("Projects API response:", response.data.data);
 
@@ -245,7 +290,7 @@ const Dashboard = () => {
 
             {/* Right side controls */}
             <div className="flex items-center space-x-4">
-              {/* Theme Toggle Button */}
+              {/* Theme Toggle Button
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -258,15 +303,15 @@ const Dashboard = () => {
                 )}
               </button>
 
-              {/* Notifications */}
+              Notifications
               <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </button>
 
-              {/* Settings */}
+              Settings
               <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <Settings className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              </button>
+              </button> */}
 
               {/* User Profile Dropdown */}
               <div className="flex items-center space-x-3">

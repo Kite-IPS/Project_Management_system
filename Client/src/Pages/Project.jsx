@@ -80,6 +80,13 @@ const Project = () => {
       delete: false,
       view: true,
     },
+    SPOC: {
+      read: true,
+      write: true,
+      update: true,
+      delete: false,
+      view: true,
+    },
     Member: {
       read: false,
       write: false,
@@ -412,7 +419,7 @@ const Project = () => {
       const { role, userId } = await fetchCurrentUserRole();
 
       // Then fetch other data
-      if (role === "Admin" || role === "Manager") {
+      if (role === "Admin" || role === "Manager" || role === "SPOC") {
         await fetchUsers();
       }
       await fetchProjects();

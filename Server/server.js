@@ -54,7 +54,7 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
+    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Fix CORS policy issue
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],

@@ -63,6 +63,13 @@ const checkPermissions = (userRole, action) => {
       delete: false,
       view: true,
     },
+    SPOC: {
+      read: true,
+      write: true,
+      update: true,
+      delete: false,
+      view: true,
+    },
     Member: {
       read: true,
       write: false,

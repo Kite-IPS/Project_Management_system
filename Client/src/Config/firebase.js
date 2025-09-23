@@ -112,6 +112,10 @@ export const signInWithGoogle = async () => {
     if (backendResponse.accessToken) {
       localStorage.setItem('accessToken', backendResponse.accessToken);
       console.log('Authentication complete, token stored');
+      console.log('Token in localStorage:', localStorage.getItem('accessToken')); // Debug log
+      
+      // Trigger a storage event to notify other components
+      window.dispatchEvent(new Event('storage'));
     } else {
       console.error('No access token received from backend');
       await signOut(auth);
