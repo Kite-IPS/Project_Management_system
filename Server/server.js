@@ -68,20 +68,30 @@ app.use(
   })
 );
 
-// 3. Rate Limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
+// 3. Rate Limiting with different limits for different routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests per 15 minutes for auth routes
   message: {
     success: false,
-    message: 'Too many requests from this IP, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+    message: 'Too many authentication requests, please try again later.'
+  }
 });
 
-// Apply rate limiting only to API routes
-app.use('/api/', limiter);
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute for other routes
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.'
+  }
+});
+
+// Apply stricter rate limiting to auth routes
+app.use('/api/auth/', authLimiter);
+
+// Apply standard rate limiting to other API routes
+app.use('/api/', apiLimiter);
 
 // 4. Body Parsing
 app.use(express.json({ limit: '10mb' }));
