@@ -7,7 +7,6 @@ import { Sun, Moon, LogOut, User, Settings, Bell, Home, Clock, CheckCircle, Aler
 import Sidebar from '../Components/Sidebar.jsx';
 import axios from 'axios';
 
-
 const Dashboard = () => {
   const { userProfile } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -15,9 +14,90 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [userRole, setUserRole] = useState("Member"); // Default to Member
+  const [currentUserId, setCurrentUserId] = useState(null); // Track current user ID
+
+  // API base URL
+  const API_BASE_URL = "http://localhost:5000/api";
+
+  // Configure axios with auth token
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("accessToken");
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    };
+  };
+
+  // Get current user information and set role correctly
+  const fetchCurrentUserRole = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/auth/profile`,
+        getAuthHeaders()
+      );
+
+      console.table("User API response:", response.data.user);
+
+      if (response.data.success && response.data.user) {
+        const user = response.data.user;
+        const role = user.role || "Member";
+        const userId = user._id || user.id;
+
+        setUserRole(role);
+        setCurrentUserId(userId);
+
+        return { role, userId };
+      }
+    } catch (error) {
+      console.error("Error fetching current user role from API:", error);
+
+      // Fallback to token parsing if API call fails
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+
+          // Try different possible field names for role and user ID
+          const role =
+            payload.role || payload.userRole || payload.user?.role || "Member";
+          const userId =
+            payload.userId ||
+            payload.id ||
+            payload.user?.id ||
+            payload.user?._id ||
+            payload.sub;
+
+          setUserRole(role);
+          setCurrentUserId(userId);
+
+          return { role, userId };
+        } catch (tokenError) {
+          console.error("Error parsing token:", tokenError);
+          setUserRole("Member");
+          setCurrentUserId(null);
+        }
+      }
+    }
+
+    return { role: "Member", userId: null };
+  };
 
   useEffect(() => {
-    fetchActivities();
+    const initializeData = async () => {
+      // Fetch user role first
+      await fetchCurrentUserRole();
+      
+      // Then fetch other data
+      await fetchActivities();
+      await fetchProjects();
+    };
+
+    initializeData();
   }, []);
 
   const handleLogout = async () => {
@@ -29,35 +109,39 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch recent activities
+  // Fetch recent activities from API
   const fetchActivities = async () => {
     try {
       setLoadingActivities(true);
-      const response = await axios.get('http://localhost:5000/api/activities/recent?limit=5');
+      const response = await axios.get(`${API_BASE_URL}/activities/recent?limit=8`, getAuthHeaders());
+      
       if (response.data.success) {
         setActivities(response.data.data);
+      } else {
+        console.error("Invalid activities response structure:", response.data);
+        setActivities([]);
       }
     } catch (error) {
       console.error('Error fetching activities:', error);
-      // Fallback to mock data if API fails
+      // Fallback to basic mock data if API fails
       setActivities([
         {
           id: 1,
           description: 'Project "Website Redesign" was updated',
           timeAgo: '2 hours ago',
-          type: 'update'
+          action: 'updated'
         },
         {
           id: 2,
           description: 'Task "Setup database" completed',
           timeAgo: '4 hours ago',
-          type: 'complete'
+          action: 'completed'
         },
         {
           id: 3,
           description: 'New team member added to "Mobile App"',
           timeAgo: '1 day ago',
-          type: 'add'
+          action: 'created'
         }
       ]);
     } finally {
@@ -65,73 +149,85 @@ const Dashboard = () => {
     }
   };
 
-    // Mock data for projects
-    const [projects, setProjects] = useState([
-      {
-        id: 1,
-        title: 'Website Redesign',
-        description: 'Complete overhaul of the company website with modern UI/UX design',
-        status: 'In Progress',
-        assignees: ['John Doe', 'Jane Smith'],
-        dueDate: '2025-10-15',
-        createdDate: '2025-09-01'
-      },
-      {
-        id: 2,
-        title: 'Mobile App Development',
-        description: 'Develop iOS and Android mobile application',
-        status: 'To Do',
-        assignees: ['Jane Smith', 'Mike Wilson', 'Alex Rodriguez'],
-        dueDate: '2025-12-01',
-        createdDate: '2025-09-10'
-      },
-      {
-        id: 3,
-        title: 'Database Optimization',
-        description: 'Improve database performance and implement caching',
-        status: 'Done',
-        assignees: ['Mike Wilson'],
-        dueDate: '2025-09-30',
-        createdDate: '2025-08-15'
-      },
-      {
-        id: 4,
-        title: 'API Documentation',
-        description: 'Create comprehensive API documentation for developers',
-        status: 'In Progress',
-        assignees: ['Sarah Johnson', 'David Brown'],
-        dueDate: '2025-10-20',
-        createdDate: '2025-09-05'
-      },
-      {
-        id: 5,
-        title: 'Security Audit',
-        description: 'Conduct comprehensive security audit of all systems',
-        status: 'To Do',
-        assignees: ['David Brown', 'Chris Taylor'],
-        dueDate: '2025-11-15',
-        createdDate: '2025-09-12'
-      },
-      {
-        id: 6,
-        title: 'User Training Materials',
-        description: 'Develop training materials and user guides',
-        status: 'Review',
-        assignees: ['Lisa Anderson', 'Emma Thompson', 'Maya Patel'],
-        dueDate: '2025-10-25',
-        createdDate: '2025-08-20'
+  // Fetch projects from API using same pattern as Project.jsx
+  const fetchProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const response = await axios.get(`${API_BASE_URL}/projects`, getAuthHeaders());
+      
+      console.table("Projects API response:", response.data.data);
+
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setProjects(response.data.data);
+      } else {
+        console.error("Invalid projects response structure:", response.data);
+        setProjects([]);
       }
-    ]);
-  
-    // Calculate project statistics
-    const projectStats = {
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  // Calculate project statistics from real data
+  const calculateProjectStats = () => {
+    if (!Array.isArray(projects)) {
+      return {
+        total: 0,
+        ongoing: 0,
+        pending: 0,
+        completed: 0,
+        review: 0,
+        overdue: 0
+      };
+    }
+
+    const stats = {
       total: projects.length,
-      ongoing: projects.filter(p => p.status === 'In Progress').length,
-      pending: projects.filter(p => p.status === 'To Do').length,
-      completed: projects.filter(p => p.status === 'Done').length,
-      review: projects.filter(p => p.status === 'Review').length,
-      overdue: projects.filter(p => new Date(p.dueDate) < new Date() && p.status !== 'Done').length
+      ongoing: 0,
+      pending: 0,
+      completed: 0,
+      review: 0,
+      overdue: 0
     };
+
+    const currentDate = new Date();
+    
+    projects.forEach(project => {
+      const status = project.status || project.projectStatus || 'Planning';
+      const endDate = new Date(project.endDate || project.dueDate);
+      
+      // Count by status
+      switch (status.toLowerCase()) {
+        case 'in progress':
+          stats.ongoing++;
+          break;
+        case 'to do':
+        case 'planning':
+          stats.pending++;
+          break;
+        case 'done':
+        case 'completed':
+          stats.completed++;
+          break;
+        case 'review':
+        case 'in review':
+          stats.review++;
+          break;
+      }
+      
+      // Count overdue projects (not completed and past due date)
+      if (status.toLowerCase() !== 'done' && status.toLowerCase() !== 'completed' && endDate < currentDate) {
+        stats.overdue++;
+      }
+    });
+
+    return stats;
+  };
+
+  const projectStats = calculateProjectStats();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -228,7 +324,11 @@ const Dashboard = () => {
                 <Target className="h-8 w-8 text-blue-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Projects</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{projectStats.total}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{projectStats.total}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -238,7 +338,11 @@ const Dashboard = () => {
                 <Activity className="h-8 w-8 text-blue-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ongoing</p>
-                  <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{projectStats.ongoing}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">{projectStats.ongoing}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -248,7 +352,11 @@ const Dashboard = () => {
                 <Clock className="h-8 w-8 text-gray-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
-                  <p className="text-2xl font-semibold text-gray-600 dark:text-gray-400">{projectStats.pending}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-gray-600 dark:text-gray-400">{projectStats.pending}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -258,7 +366,11 @@ const Dashboard = () => {
                 <CheckCircle className="h-8 w-8 text-green-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
-                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{projectStats.completed}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{projectStats.completed}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,7 +380,11 @@ const Dashboard = () => {
                 <TrendingUp className="h-8 w-8 text-yellow-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Review</p>
-                  <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">{projectStats.review}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">{projectStats.review}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -278,7 +394,11 @@ const Dashboard = () => {
                 <AlertTriangle className="h-8 w-8 text-red-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Overdue</p>
-                  <p className="text-2xl font-semibold text-red-600 dark:text-red-400">{projectStats.overdue}</p>
+                  {loadingProjects ? (
+                    <div className="animate-pulse bg-gray-300 dark:bg-gray-600 h-6 w-8 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-semibold text-red-600 dark:text-red-400">{projectStats.overdue}</p>
+                  )}
                 </div>
               </div>
             </div>
