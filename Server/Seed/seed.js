@@ -10,7 +10,8 @@ const seedRoles = async () => {
     
     const roles = [
       { name: 'Yogesh Venugopal', email: 'yogeshvenugopal875@gmail.com', role: 'Admin', batch: 2023 },
-      { name: 'Mitun Kumar', email: 'mitun.7557@gmail.com', role: 'Admin', batch: 2023 }
+      { name: 'Mitun Kumar', email: 'mitun.7557@gmail.com', role: 'Admin', batch: 2023 },
+      { name: 'Ranjith', email: 'mranjith2506@gmail.com', role: 'Admin', batch: 2023 },
     ];
     
     await Role.insertMany(roles);
