@@ -162,7 +162,7 @@ export default function Sidebar({ onToggle }) {
         <div>
           <div className="text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">Developed by IPS Tech</p>
-            <img src="/src/assets/ips_white.webp" className="h-8 mx-auto mt-2" />
+            <img src={ips} className="h-8 mx-auto mt-2" />
           </div>
         </div>
         </>
