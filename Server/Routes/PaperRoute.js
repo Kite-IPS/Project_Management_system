@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';  // Added: For /tmp in serverless
 import {
   getAllPapers,
   getPaper,
@@ -13,8 +14,8 @@ import {
 
 const router = express.Router();
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = 'uploads/papers';
+// Create uploads directory in /tmp if it doesn't exist (Vercel writable dir)
+const uploadsDir = path.join(os.tmpdir(), 'uploads', 'papers');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
