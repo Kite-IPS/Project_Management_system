@@ -98,7 +98,7 @@ const Attendance = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${API_BASE_URL}/attendance?date=${selectedDate}`,
+        `${API_BASE_URL}/api/attendance?date=${selectedDate}`,
         getAuthHeaders()
       );
 
@@ -182,14 +182,14 @@ const Attendance = () => {
         
         // The backend controller already handles updates by looking up existing records by userId and date
         response = await axios.post(
-          `${API_BASE_URL}/attendance`,
+          `${API_BASE_URL}/api/attendance`,
           attendancePayload,
           getAuthHeaders()
         );
       } else {
         // Create new record - same endpoint
         response = await axios.post(
-          `${API_BASE_URL}/attendance`,
+          `${API_BASE_URL}/api/attendance`,
           attendancePayload,
           getAuthHeaders()
         );
