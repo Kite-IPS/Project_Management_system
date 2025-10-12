@@ -45,7 +45,7 @@ const EventReport = () => {
       setLoadingUsers(true);
       const token = localStorage.getItem('accessToken'); // Assuming you store token in localStorage
       
-      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -78,7 +78,7 @@ const EventReport = () => {
   const fetchEventReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/event-reports`);
+      const response = await fetch(`${API_BASE_URL}/api/event-reports`);
       const data = await response.json();
       
       if (data.success) {
@@ -136,13 +136,13 @@ const EventReport = () => {
       let response;
       if (editingReport) {
         // Update existing report
-        response = await fetch(`${API_BASE_URL}/event-reports/${editingReport._id}`, {
+        response = await fetch(`${API_BASE_URL}/api/event-reports/${editingReport._id}`, {
           method: 'PUT',
           body: formDataToSend
         });
       } else {
         // Create new report
-        response = await fetch(`${API_BASE_URL}/event-reports`, {
+        response = await fetch(`${API_BASE_URL}/api/event-reports`, {
           method: 'POST',
           body: formDataToSend
         });
@@ -181,7 +181,7 @@ const EventReport = () => {
   const handleDelete = async (reportId) => {
     if (window.confirm('Are you sure you want to delete this event report?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/event-reports/${reportId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/event-reports/${reportId}`, {
           method: 'DELETE'
         });
         
@@ -226,7 +226,7 @@ const EventReport = () => {
   // Handle file download
   const handleDownload = async (fileUrl, fileName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/event-reports/download/${fileUrl}`);
+      const response = await fetch(`${API_BASE_URL}/api/event-reports/download/${fileUrl}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

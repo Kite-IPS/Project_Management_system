@@ -45,7 +45,7 @@ const Paper = () => {
       setLoadingUsers(true);
       const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -84,7 +84,7 @@ const Paper = () => {
   const fetchPapers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/papers`);
+      const response = await fetch(`${API_BASE_URL}/api/papers`);
       const data = await response.json();
       
       if (data.success) {
@@ -142,13 +142,13 @@ const Paper = () => {
       let response;
       if (editingPaper) {
         // Update existing paper
-        response = await fetch(`${API_BASE_URL}/papers/${editingPaper._id}`, {
+        response = await fetch(`${API_BASE_URL}/api/papers/${editingPaper._id}`, {
           method: 'PUT',
           body: formDataToSend
         });
       } else {
         // Create new paper
-        response = await fetch(`${API_BASE_URL}/papers`, {
+        response = await fetch(`${API_BASE_URL}/api/papers`, {
           method: 'POST',
           body: formDataToSend
         });
@@ -187,7 +187,7 @@ const Paper = () => {
   const handleDelete = async (paperId) => {
     if (window.confirm('Are you sure you want to delete this paper?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/papers/${paperId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/papers/${paperId}`, {
           method: 'DELETE'
         });
         
@@ -232,7 +232,7 @@ const Paper = () => {
   // Handle file download
   const handleDownload = async (fileUrl, fileName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/papers/download/${fileUrl}`);
+      const response = await fetch(`${API_BASE_URL}/api/papers/download/${fileUrl}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

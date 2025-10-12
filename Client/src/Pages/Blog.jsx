@@ -46,7 +46,7 @@ const Blog = () => {
   // Fetch authors from API
   const fetchAuthors = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/blogs/authors`);
+      const response = await axios.get(`${API_BASE_URL}/api/blogs/authors`);
       if (response.data.success) {
         setAuthors(response.data.data);
       }
@@ -59,7 +59,7 @@ const Blog = () => {
   const fetchBlogPosts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/blogs`, {
+      const response = await axios.get(`${API_BASE_URL}/api/blogs`, {
         params: {
           search: searchTerm,
           filter: filterStatus,
@@ -137,7 +137,7 @@ const Blog = () => {
 
       if (editingPost) {
         // Update existing post
-        const response = await axios.put(`${API_BASE_URL}/blogs/${editingPost.id}`, blogData);
+        const response = await axios.put(`${API_BASE_URL}/api/blogs/${editingPost.id}`, blogData);
         
         if (response.data.success) {
           fetchBlogPosts(); // Refresh the list
@@ -146,7 +146,7 @@ const Blog = () => {
         }
       } else {
         // Add new post
-        const response = await axios.post(`${API_BASE_URL}/blogs`, blogData);
+        const response = await axios.post(`${API_BASE_URL}/api/blogs`, blogData);
         
         if (response.data.success) {
           fetchBlogPosts(); // Refresh the list
@@ -186,7 +186,7 @@ const Blog = () => {
   const handleDelete = async (postId) => {
     if (window.confirm('Are you sure you want to delete this blog post?')) {
       try {
-        const response = await axios.delete(`${API_BASE_URL}/blogs/${postId}`);
+        const response = await axios.delete(`${API_BASE_URL}/api/blogs/${postId}`);
         
         if (response.data.success) {
           fetchBlogPosts(); // Refresh the list

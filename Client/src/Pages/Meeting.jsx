@@ -49,7 +49,7 @@ const Meeting = () => {
   // Fetch authors from API
   const fetchAuthors = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/meetings/authors`);
+      const response = await axios.get(`${API_BASE_URL}/api/meetings/authors`);
       if (response.data.success) {
         setAuthors(response.data.data);
         setAllUsers(response.data.data); // Use same data for participants
@@ -63,7 +63,7 @@ const Meeting = () => {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/meetings`, {
+      const response = await axios.get(`${API_BASE_URL}/api/meetings`, {
         params: {
           search: searchTerm,
           filter: filterStatus,
@@ -159,7 +159,7 @@ const Meeting = () => {
 
       if (editingMeeting) {
         // Update existing meeting
-        const response = await axios.put(`${API_BASE_URL}/meetings/${editingMeeting.id}`, formDataToSend, config);
+        const response = await axios.put(`${API_BASE_URL}/api/meetings/${editingMeeting.id}`, formDataToSend, config);
 
         if (response.data.success) {
           fetchMeetings(); // Refresh the list
@@ -168,7 +168,7 @@ const Meeting = () => {
         }
       } else {
         // Add new meeting
-        const response = await axios.post(`${API_BASE_URL}/meetings`, formDataToSend, config);
+        const response = await axios.post(`${API_BASE_URL}/api/meetings`, formDataToSend, config);
 
         if (response.data.success) {
           fetchMeetings(); // Refresh the list
@@ -210,7 +210,7 @@ const Meeting = () => {
   const handleDelete = async (meetingId) => {
     if (window.confirm('Are you sure you want to delete this meeting notes?')) {
       try {
-        const response = await axios.delete(`${API_BASE_URL}/meetings/${meetingId}`);
+        const response = await axios.delete(`${API_BASE_URL}/api/meetings/${meetingId}`);
         
         if (response.data.success) {
           fetchMeetings(); // Refresh the list

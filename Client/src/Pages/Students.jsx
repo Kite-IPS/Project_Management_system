@@ -60,7 +60,7 @@ const Students = () => {
         return;
       }
     
-      const response = await axios.get(`${API_BASE_URL}/students`);
+      const response = await axios.get(`${API_BASE_URL}/api/students`);
     
       if (response.data.success) {
         const students = response.data.data; // this is an array
@@ -82,7 +82,7 @@ const Students = () => {
     try {
       setLoading(true);
       // For now, make request without authentication
-      const response = await axios.get(`${API_BASE_URL}/students`);
+      const response = await axios.get(`${API_BASE_URL}/api/students`);
       if (response.data.success) {
         setStudents(response.data.data);
       }
@@ -99,7 +99,7 @@ const Students = () => {
   const handleAddMember = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/students/add`, formData);
+      await axios.post(`${API_BASE_URL}/api/students/add`, formData);
       setShowAddModal(false);
       fetchStudents();
       setFormData({ name: '', email: '', batch: new Date().getFullYear(), role: 'Member' });
@@ -111,7 +111,7 @@ const Students = () => {
 
   const handleUpdateRole = async (email, newRole) => {
     try {
-      await axios.put(`${API_BASE_URL}/students/role/${email}`, { role: newRole });
+      await axios.put(`${API_BASE_URL}/api/students/role/${email}`, { role: newRole });
       fetchStudents();
       setShowEditModal(false);
     } catch (error) {
@@ -123,7 +123,7 @@ const Students = () => {
   const handleRemoveMember = async (email) => {
     if (window.confirm('Are you sure you want to remove this member?')) {
       try {
-        await axios.delete(`${API_BASE_URL}/students/remove/${email}`);
+        await axios.delete(`${API_BASE_URL}/api/students/remove/${email}`);
         fetchStudents();
       } catch (error) {
         console.error('Error removing member:', error);

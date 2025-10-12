@@ -158,7 +158,7 @@ const Project = () => {
     try {
 
       const response = await axios.get(
-        `${API_BASE_URL}/auth/users`,
+        `${API_BASE_URL}/api/auth/users`,
         getAuthHeaders()
       );
 
@@ -195,7 +195,7 @@ const Project = () => {
       setLoading(true);
 
       const response = await axios.get(
-        `${API_BASE_URL}/projects`,
+        `${API_BASE_URL}/api/projects`,
         getAuthHeaders()
       );
 
@@ -252,13 +252,13 @@ const Project = () => {
       let response;
       if (editingRecord) {
         response = await axios.put(
-          `${API_BASE_URL}/projects/update/${editingRecord._id}`,
+          `${API_BASE_URL}/api/projects/update/${editingRecord._id}`,
           payload,
           getAuthHeaders()
         );
       } else {
         response = await axios.post(
-          `${API_BASE_URL}/projects`,
+          `${API_BASE_URL}/api/projects`,
           payload,
           getAuthHeaders()
         );

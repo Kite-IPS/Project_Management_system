@@ -60,7 +60,7 @@ const Attendance = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/auth/users`,
+        `${API_BASE_URL}/api/auth/users`,
         getAuthHeaders()
       );
 
