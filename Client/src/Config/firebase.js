@@ -27,8 +27,8 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
-// Backend API base URL
-const API_BASE_URL = 'http://localhost:3000/api';
+// Backend API base URL (Vite env for prod/Netlify)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';  // Fixed: Env fallback
 
 // Helper function to make API calls
 const apiCall = async (endpoint, options = {}) => {
