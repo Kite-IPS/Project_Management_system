@@ -4,7 +4,7 @@ A comprehensive project management application built with React (frontend) and N
 
 ## 🚀 Features
 
-### Core Functionality
+### Core Funct ionality
 - **User Authentication** - Firebase-based authentication system
 - **Project Management** - Create, update, and track projects
 - **Meeting Management** - Schedule and manage meeting notes
