@@ -44,7 +44,7 @@ const Meeting = () => {
   const [allUsers, setAllUsers] = useState([]); // For participants selection
 
   // API base URL
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'http://localhost:3000/api';
 
   // Fetch authors from API
   const fetchAuthors = async () => {
@@ -676,7 +676,7 @@ const Meeting = () => {
                                 meeting.files.slice(0, 2).map((file, index) => (
                                   <a
                                     key={index}
-                                    href={`http://localhost:5000${file.url}`}
+                                    href={`http://localhost:3000${file.url}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200"

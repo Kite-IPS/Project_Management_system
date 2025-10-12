@@ -57,7 +57,7 @@ const Project = () => {
   const [error, setError] = useState(null);
 
   // API base URL
-  const API_BASE_URL = "http://localhost:5000/api";
+  const API_BASE_URL = "http://localhost:3000/api";
 
   // Configure axios with auth token
   const getAuthHeaders = () => {
