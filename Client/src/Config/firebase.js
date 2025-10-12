@@ -65,7 +65,7 @@ export const signInWithGoogle = async () => {
 
     // Step 2: Check if email is authorized BEFORE proceeding
     try {
-      await apiCall('/auth/check-email', {
+      await apiCall('/api/auth/check-email', {  // Added /api
         method: 'POST',
         body: JSON.stringify({ email: user.email })
       });
@@ -103,7 +103,7 @@ export const signInWithGoogle = async () => {
     });
     
     // Save/update user in backend
-    const backendResponse = await apiCall('/auth/oauth', {
+    const backendResponse = await apiCall('/api/auth/oauth', {  // Added /api
       method: 'POST',
       body: JSON.stringify(oauthData)
     });
@@ -150,7 +150,7 @@ export const logOut = async () => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       try {
-        await apiCall('/auth/logout', {
+        await apiCall('/api/auth/logout', {  // Added /api
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`
@@ -174,7 +174,7 @@ export const getUserProfile = async () => {
       throw new Error('No access token found');
     }
 
-    const response = await apiCall('/auth/profile', {
+    const response = await apiCall('/api/auth/profile', {  // Added /api
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -191,7 +191,7 @@ export const getUserProfile = async () => {
 // Refresh access token
 export const refreshAccessToken = async (refreshToken) => {
   try {
-    const response = await apiCall('/auth/refresh-token', {
+    const response = await apiCall('/api/auth/refresh-token', {  // Added /api
       method: 'POST',
       body: JSON.stringify({ refreshToken })
     });

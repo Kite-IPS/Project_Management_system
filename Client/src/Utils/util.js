@@ -68,18 +68,18 @@ export const projectAPI = {
       }
     });
 
-    const endpoint = `/projects${queryParams.toString() ? `?${queryParams}` : ''}`;
+    const endpoint = `/api/projects${queryParams.toString() ? `?${queryParams}` : ''}`;  // Added /api
     return await apiCall(endpoint);
   },
 
   // Get single project by ID
   getProject: async (id) => {
-    return await apiCall(`/projects/${id}`);
+    return await apiCall(`/api/projects/${id}`);  // Added /api
   },
 
   // Create new project
   createProject: async (projectData) => {
-    return await apiCall('/projects', {
+    return await apiCall('/api/projects', {  // Added /api
       method: 'POST',
       body: JSON.stringify(projectData),
     });
@@ -87,7 +87,7 @@ export const projectAPI = {
 
   // Update project
   updateProject: async (id, projectData) => {
-    return await apiCall(`/projects/${id}`, {
+    return await apiCall(`/api/projects/${id}`, {  // Added /api
       method: 'PUT',
       body: JSON.stringify(projectData),
     });
@@ -95,14 +95,14 @@ export const projectAPI = {
 
   // Delete project
   deleteProject: async (id) => {
-    return await apiCall(`/projects/${id}`, {
+    return await apiCall(`/api/projects/${id}`, {  // Added /api
       method: 'DELETE',
     });
   },
 
   // Add comment to project
   addComment: async (id, message) => {
-    return await apiCall(`/projects/${id}/comments`, {
+    return await apiCall(`/api/projects/${id}/comments`, {  // Added /api
       method: 'POST',
       body: JSON.stringify({ message }),
     });
@@ -110,7 +110,7 @@ export const projectAPI = {
 
   // Get team members for assignment
   getTeamMembers: async () => {
-    return await apiCall('/projects/team-members');
+    return await apiCall('/api/projects/team-members');  // Added /api
   }
 };
 
@@ -118,17 +118,17 @@ export const projectAPI = {
 export const uploadAPI = {
   // Create paper with file (e.g., POST /api/papers)
   createPaper: async (formData) => {  // Pass FormData from component
-    return await uploadCall('/papers', formData, { method: 'POST' });
+    return await uploadCall('/api/papers', formData, { method: 'POST' });  // Added /api
   },
 
   // Update paper with file (PUT /api/papers/:id)
   updatePaper: async (id, formData) => {
-    return await uploadCall(`/papers/${id}`, formData, { method: 'PUT' });
+    return await uploadCall(`/api/papers/${id}`, formData, { method: 'PUT' });  // Added /api
   },
 
   // Create event report with file (similar)
   createEventReport: async (formData) => {
-    return await uploadCall('/event-reports', formData, { method: 'POST' });
+    return await uploadCall('/api/event-reports', formData, { method: 'POST' });  // Added /api
   },
 
   // Download file
@@ -141,7 +141,7 @@ export const uploadAPI = {
 export const authAPI = {
   // Login user
   login: async (credentials) => {
-    return await apiCall('/auth/login', {
+    return await apiCall('/api/auth/login', {  // Added /api
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -149,7 +149,7 @@ export const authAPI = {
 
   // Register user
   register: async (userData) => {
-    return await apiCall('/auth/register', {
+    return await apiCall('/api/auth/register', {  // Added /api
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -157,19 +157,19 @@ export const authAPI = {
 
   // Logout user
   logout: async () => {
-    return await apiCall('/auth/logout', {
+    return await apiCall('/api/auth/logout', {  // Added /api
       method: 'POST',
     });
   },
 
   // Get current user profile
   getProfile: async () => {
-    return await apiCall('/auth/profile');
+    return await apiCall('/api/auth/profile');  // Added /api
   },
 
   // Update user profile
   updateProfile: async (userData) => {
-    return await apiCall('/auth/profile', {
+    return await apiCall('/api/auth/profile', {  // Added /api
       method: 'PUT',
       body: JSON.stringify(userData),
     });
