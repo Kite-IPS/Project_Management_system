@@ -23,23 +23,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Manual CORS Headers for debugging
-// app.use((req, res, next) => {
-//   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-//   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//   res.setHeader('Access-Control-Allow-Credentials', 'true');
-//   if (req.method === 'OPTIONS') {
-//     return res.sendStatus(204);
-//   }
-//   next();
-// });
-
 // --- Middleware Configuration ---
 
 // 1. CORS Configuration
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://ipstech-management.netlify.app'
+    : 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -58,7 +48,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "http://localhost:5173", "https://accounts.google.com"],
+        connectSrc: ["'self'", "http://localhost:5173", "https://ipstech-management.netlify.app", "https://accounts.google.com"],
         frameSrc: ["'self'", "https://accounts.google.com"],
         imgSrc: ["'self'", "data:", "https:"],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
@@ -111,7 +101,7 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error('Database connection error:', error);
-    process.exit(1);
+    throw error;  // Changed: Throw error for serverless handling instead of process.exit
   }
 };
 
@@ -175,22 +165,28 @@ app.use((req, res) => {
   });
 });
 
-// --- Server Startup ---
-const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// --- Vercel Serverless Export ---
+// Added: Export app for serverless (replaces listen/shutdown below)
+// Removed: app.listen, server var, and graceful shutdown (process.on)—not needed in Vercel
+
+export default app;
+
+// --- (REMOVED BLOCKS BELOW FOR VERCEL) ---
+// const server = app.listen(PORT, () => {
+//   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+// });
 
 // Graceful shutdown
-const gracefulShutdown = (signal) => {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
-  server.close(() => {
-    console.log('HTTP server closed.');
-    mongoose.connection.close(false).then(() => {
-      console.log('MongoDB connection closed.');
-      process.exit(0);
-    });
-  });
-};
+// const gracefulShutdown = (signal) => {
+//   console.log(`\n${signal} received. Shutting down gracefully...`);
+//   server.close(() => {
+//     console.log('HTTP server closed.');
+//     mongoose.connection.close(false).then(() => {
+//       console.log('MongoDB connection closed.');
+//       process.exit(0);
+//     });
+//   });
+// };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+// process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
