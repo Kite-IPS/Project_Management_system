@@ -1,5 +1,6 @@
 // API utility functions for project management
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// API utility functions for project management
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';  // Vite env + Vercel dev fallback
 
 // Generic API call function
 export const apiCall = async (endpoint, options = {}) => {
@@ -28,6 +29,8 @@ export const apiCall = async (endpoint, options = {}) => {
     throw error;
   }
 };
+
+// ... rest of your code (projectAPI, authAPI, handleApiError, etc.—all good)
 
 // Project API functions
 export const projectAPI = {
@@ -356,3 +359,21 @@ export default {
   getStatusColor,
   getPriorityColor
 };
+
+// In projectAPI or wherever
+createPaper: async (projectData) => {
+  const formData = new FormData();
+  // Append JSON fields as blobs or use JSON for non-file
+  Object.keys(projectData).forEach(key => {
+    if (key === 'paperWork' && projectData[key]) {
+      formData.append('paperWork', projectData[key]);
+    } else {
+      formData.append(key, JSON.stringify(projectData[key]));
+    }
+  });
+  return await apiCall('/papers', {  // Your route
+    method: 'POST',
+    body: formData,
+    headers: { /* No Content-Type—let browser set multipart */ }
+  });
+}
