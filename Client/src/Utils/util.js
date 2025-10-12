@@ -1,16 +1,14 @@
 // API utility functions for project management
-// API utility functions for project management
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';  // Vite env + Vercel dev fallback
 
-// Generic API call function
+// Generic API call function (JSON by default)
 export const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
   
   const config = {
     headers: {
-      'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
+      ...options.headers,  // Let options override (no forced JSON for FormData)
     },
     ...options,
   };
@@ -30,7 +28,33 @@ export const apiCall = async (endpoint, options = {}) => {
   }
 };
 
-// ... rest of your code (projectAPI, authAPI, handleApiError, etc.—all good)
+// Upload-specific call (for FormData—no JSON header)
+export const uploadCall = async (endpoint, formData, options = {}) => {
+  const token = localStorage.getItem('authToken');
+  
+  const config = {
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,  // No Content-Type—browser sets multipart/form-data
+    },
+    body: formData,
+    ...options,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Upload Error:', error);
+    throw error;
+  }
+};
 
 // Project API functions
 export const projectAPI = {
@@ -87,6 +111,29 @@ export const projectAPI = {
   // Get team members for assignment
   getTeamMembers: async () => {
     return await apiCall('/projects/team-members');
+  }
+};
+
+// Upload API functions (for papers, event-reports, etc.)
+export const uploadAPI = {
+  // Create paper with file (e.g., POST /api/papers)
+  createPaper: async (formData) => {  // Pass FormData from component
+    return await uploadCall('/papers', formData, { method: 'POST' });
+  },
+
+  // Update paper with file (PUT /api/papers/:id)
+  updatePaper: async (id, formData) => {
+    return await uploadCall(`/papers/${id}`, formData, { method: 'PUT' });
+  },
+
+  // Create event report with file (similar)
+  createEventReport: async (formData) => {
+    return await uploadCall('/event-reports', formData, { method: 'POST' });
+  },
+
+  // Download file
+  downloadFile: async (endpoint) => {  // e.g., /papers/download/filename
+    return await apiCall(endpoint);  // Returns blob or redirects to file
   }
 };
 
@@ -347,7 +394,9 @@ export const getPriorityColor = (priority) => {
 
 export default {
   apiCall,
+  uploadCall,  // Added for FormData
   projectAPI,
+  uploadAPI,   // New: For file routes
   authAPI,
   handleApiError,
   getUserPermissions,
@@ -359,21 +408,3 @@ export default {
   getStatusColor,
   getPriorityColor
 };
-
-// In projectAPI or wherever
-createPaper: async (projectData) => {
-  const formData = new FormData();
-  // Append JSON fields as blobs or use JSON for non-file
-  Object.keys(projectData).forEach(key => {
-    if (key === 'paperWork' && projectData[key]) {
-      formData.append('paperWork', projectData[key]);
-    } else {
-      formData.append(key, JSON.stringify(projectData[key]));
-    }
-  });
-  return await apiCall('/papers', {  // Your route
-    method: 'POST',
-    body: formData,
-    headers: { /* No Content-Type—let browser set multipart */ }
-  });
-}

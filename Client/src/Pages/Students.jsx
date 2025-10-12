@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../Components/Sidebar';
 import { Users, Search, Plus, Edit2, Trash, Filter } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../Context/AuthContent';
