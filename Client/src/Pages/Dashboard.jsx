@@ -151,7 +151,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/activities/recent?limit=8`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/api/activities/recent?limit=8`, authHeaders);
       
       if (response.data.success) {
         setActivities(response.data.data);
@@ -198,7 +198,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/projects`, authHeaders);
+      const response = await axios.get(`${API_BASE_URL}/api/projects`, authHeaders);
       
       console.table("Projects API response:", response.data.data);
 
