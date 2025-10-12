@@ -28,7 +28,7 @@ googleProvider.setCustomParameters({
 });
 
 // Backend API base URL
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Helper function to make API calls
 const apiCall = async (endpoint, options = {}) => {
