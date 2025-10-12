@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/api/auth/check-email",
+      "methods": ["OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ipstech-management.netlify.app",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
+      "status": 204
+    },
+    {
       "src": "/(.*)",
       "dest": "server.js"
     }
