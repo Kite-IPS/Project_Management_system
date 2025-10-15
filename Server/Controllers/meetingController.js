@@ -170,7 +170,7 @@ const createMeeting = async (req, res) => {
       files = req.files.map(file => ({
         filename: file.filename,
         originalName: file.originalname,
-        url: `/api/uploads/meetings/${file.filename}`,
+        url: `/uploads/meetings/${file.filename}`,
         size: file.size,
         mimeType: file.mimetype
       }));
@@ -291,7 +291,7 @@ const updateMeeting = async (req, res) => {
       const newFiles = req.files.map(file => ({
         filename: file.filename,
         originalName: file.originalname,
-        url: `/api/uploads/meetings/${file.filename}`,
+        url: `/uploads/meetings/${file.filename}`,
         size: file.size,
         mimeType: file.mimetype
       }));
