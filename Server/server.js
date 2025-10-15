@@ -96,17 +96,58 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // --- Database Connection ---
+let retryCount = 0;
+const maxRetries = 5;
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    if (mongoose.connection.readyState >= 1) {
+      console.log('MongoDB already connected');
+      return;
+    }
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 60000,  // 60s for server selection
+      socketTimeoutMS: 60000,  // 60s for socket operations
+      connectTimeoutMS: 60000,  // 60s for initial connect
+      bufferMaxEntries: 0,  // Disable buffering for serverless
+      bufferCommands: false,  // No query queueing—fail fast if no connect
+      maxPoolSize: 10,  // Balanced pool
+      retryWrites: true,
+      w: 'majority',
+      family: 4  // IPv4 only for speed
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    retryCount = 0;
   } catch (error) {
-    console.error('Database connection error:', error);
-    throw error;  // Changed: Throw error for serverless handling instead of process.exit
+    retryCount++;
+    const delay = Math.pow(2, retryCount) * 1000;  // Exponential backoff
+    console.error(`DB Connect Error (Attempt ${retryCount}):`, error.message);
+    if (retryCount < maxRetries) {
+      console.log(`Retrying in ${delay/1000}s...`);
+      setTimeout(connectDB, delay);
+    } else {
+      console.error('Max retries reached - DB connection failed');
+      throw error;
+    }
   }
 };
 
-connectDB();
+// Await initial connection (blocks startup until ready)
+await connectDB();
+
+// Unhandled rejection handler (logs without crashing in serverless)
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit—let Vercel retry the function
+});
+
+// Request middleware (await connect if not ready per request)
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    console.log('Request - DB not ready, awaiting connect...');
+    await connectDB();
+  }
+  next();
+});
 
 // --- Static File Serving ---
 app.use('/uploads', express.static('uploads'));
@@ -168,26 +209,4 @@ app.use((req, res) => {
 
 // --- Vercel Serverless Export ---
 // Added: Export app for serverless (replaces listen/shutdown below)
-// Removed: app.listen, server var, and graceful shutdown (process.on)—not needed in Vercel
-
-export default app;
-
-// --- (REMOVED BLOCKS BELOW FOR VERCEL) ---
-// const server = app.listen(PORT, () => {
-//   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-// });
-
-// Graceful shutdown
-// const gracefulShutdown = (signal) => {
-//   console.log(`\n${signal} received. Shutting down gracefully...`);
-//   server.close(() => {
-//     console.log('HTTP server closed.');
-//     mongoose.connection.close(false).then(() => {
-//       console.log('MongoDB connection closed.');
-//       process.exit(0);
-//     });
-//   });
-// };
-
-// process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-// process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+// Removed: app.listen
