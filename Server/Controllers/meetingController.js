@@ -1,10 +1,32 @@
 import Meeting from '../Models/MeetingModel.js';
 import Role from '../Models/RoleModel.js';
 import { createActivity } from './activityController.js';
+import mongoose from 'mongoose';  // Added: For readyState check
+import fs from 'fs';  // Added: For fs ops
+import path from 'path';  // Added: For path.join
+import os from 'os';  // Added: For /tmp in serverless
+
+// Helper to await DB connection (up to 10s)
+const awaitDBConnect = async () => {
+  let attempts = 0;
+  while (mongoose.connection.readyState !== 1 && attempts < 10) {
+    console.log('MeetingController - Waiting for DB connect...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    attempts++;
+  }
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('DB not ready after wait');
+  }
+};
+
+// Helper for uploads dir in /tmp (Vercel writable)
+const getUploadsDir = () => path.join(os.tmpdir(), 'uploads', 'meetings');
 
 // Get all meetings with pagination and filtering
 const getAllMeetings = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const {
       page = 1,
       limit = 10,
@@ -91,6 +113,8 @@ const getAllMeetings = async (req, res) => {
 // Get single meeting by ID
 const getMeetingById = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const { id } = req.params;
 
     const meeting = await Meeting.findById(id);
@@ -124,6 +148,8 @@ const getMeetingById = async (req, res) => {
 // Create new meeting
 const createMeeting = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const { title, content, author, participants, datePublished, tags } = req.body;
 
     // Parse participants if it's a string (from FormData)
@@ -164,16 +190,25 @@ const createMeeting = async (req, res) => {
       }
     }
 
-    // Process uploaded files
+    // Process uploaded files (use /tmp for Vercel)
     let files = [];
     if (req.files && req.files.length > 0) {
-      files = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        url: `/uploads/meetings/${file.filename}`,
-        size: file.size,
-        mimeType: file.mimetype
-      }));
+      const uploadsDir = getUploadsDir();
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      files = req.files.map(file => {
+        const newPath = path.join(uploadsDir, file.filename);
+        fs.renameSync(file.path, newPath);  // Move to /tmp subdir
+        return {
+          filename: file.filename,
+          originalName: file.originalname,
+          url: `/api/uploads/meetings/${file.filename}`,  // Relative for serving
+          size: file.size,
+          mimeType: file.mimetype
+        };
+      });
     }
 
     // Create new meeting
@@ -217,6 +252,17 @@ const createMeeting = async (req, res) => {
       });
     }
 
+    // Clean up uploaded files on error
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        if (file.path && fs.existsSync(file.path)) {
+          fs.unlink(file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+        }
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to create meeting',
@@ -228,6 +274,8 @@ const createMeeting = async (req, res) => {
 // Update existing meeting
 const updateMeeting = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const { id } = req.params;
     const { title, content, author, participants, datePublished, existingFiles, tags, isPublished } = req.body;
 
@@ -272,7 +320,7 @@ const updateMeeting = async (req, res) => {
       }
     }
 
-    // Handle files: combine existing files with new uploads
+    // Handle files: combine existing files with new uploads (use /tmp)
     let files = [];
     let parsedExistingFiles = existingFiles;
     if (typeof existingFiles === 'string') {
@@ -288,13 +336,22 @@ const updateMeeting = async (req, res) => {
 
     // Add new uploaded files
     if (req.files && req.files.length > 0) {
-      const newFiles = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        url: `/uploads/meetings/${file.filename}`,
-        size: file.size,
-        mimeType: file.mimetype
-      }));
+      const uploadsDir = getUploadsDir();
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const newFiles = req.files.map(file => {
+        const newPath = path.join(uploadsDir, file.filename);
+        fs.renameSync(file.path, newPath);  // Move to /tmp subdir
+        return {
+          filename: file.filename,
+          originalName: file.originalname,
+          url: `/api/uploads/meetings/${file.filename}`,
+          size: file.size,
+          mimeType: file.mimetype
+        };
+      });
       files = [...files, ...newFiles];
     }
 
@@ -345,17 +402,30 @@ const updateMeeting = async (req, res) => {
       });
     }
 
+    // Clean up uploaded files on error
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        if (file.path && fs.existsSync(file.path)) {
+          fs.unlink(file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+        }
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to update meeting',
       error: error.message
     });
   }
-};;;
+};
 
 // Delete meeting
 const deleteMeeting = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const { id } = req.params;
 
     const deletedMeeting = await Meeting.findByIdAndDelete(id);
@@ -396,6 +466,8 @@ const deleteMeeting = async (req, res) => {
 // Get authors (from Role collection) for dropdown
 const getAuthors = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const authors = await Role.find({}, 'name email role batch').sort({ name: 1 });
 
     res.status(200).json({
@@ -416,6 +488,8 @@ const getAuthors = async (req, res) => {
 // Get meeting statistics
 const getMeetingStats = async (req, res) => {
   try {
+    await awaitDBConnect();  // Wait for connection
+
     const totalMeetings = await Meeting.countDocuments({ isPublished: true });
 
     // Meetings published this month
