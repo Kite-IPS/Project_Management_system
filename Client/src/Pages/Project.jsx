@@ -727,7 +727,7 @@ const Project = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Paper Work (Link)
+                    SOP (Link)
                   </label>
                   <input
                     type="url"
@@ -742,7 +742,7 @@ const Project = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Project Track (Link)
+                    Deployment (Link)
                   </label>
                   <input
                     type="url"
